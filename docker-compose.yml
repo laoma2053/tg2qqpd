@@ -1,0 +1,95 @@
+version: "3.9"
+
+# =========================
+# 所有服务共用一个内部网络
+# 不对外暴露 redis / postgres
+# =========================
+networks:
+  tg2qq-net:
+    driver: bridge
+
+# =========================
+# 持久化数据卷
+# =========================
+volumes:
+  pg_data:        # PostgreSQL 数据
+  tg_session:     # Telegram session（非常重要）
+  tg_media:       # TG 下载的媒体文件（backend 与 worker 共享）
+
+services:
+
+  # =========================
+  # PostgreSQL：只做存储
+  # =========================
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: tg2qq
+      POSTGRES_USER: tg2qq
+      POSTGRES_PASSWORD: tg2qqpass
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - tg2qq-net
+    # ❗❗❗ 不要加 ports
+    # 数据库永远不应该暴露到公网
+
+  # =========================
+  # Redis：队列 & 解耦
+  # =========================
+  redis:
+    image: redis:7
+    restart: always
+    networks:
+      - tg2qq-net
+    # ❗ 同样不要暴露端口
+    # Redis 一旦暴露 = 高风险
+
+  # =========================
+  # backend：TG 监听 + Web API
+  # =========================
+  backend:
+    build: ./backend
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      # 🔑 Telegram 登录态（不挂载=每次重登）
+      - tg_session:/app
+      # 🔥 配置热更新的关键
+      - ./mapping.json:/app/mapping.json
+      - ./blacklist.json:/app/blacklist.json
+      # 🖼️ TG 媒体文件共享（供 worker 读取）
+      - tg_media:/tmp
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - tg2qq-net
+    ports:
+      # 只暴露后台管理接口
+      # 如果你不需要后台，可直接删掉
+      - "8000:8000"
+
+  # =========================
+  # worker：真正发 QQ 消息
+  # =========================
+  worker:
+    build: ./backend
+    command: python worker.py
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./mapping.json:/app/mapping.json
+      - ./blacklist.json:/app/blacklist.json
+      # 🖼️ 与 backend 共享 /tmp（读取下载的图片并压缩/上传）
+      - tg_media:/tmp
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - tg2qq-net
+    # ❗❗❗ 不要 ports
+    # worker 永远不应该被外部访问

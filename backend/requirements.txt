@@ -1,0 +1,23 @@
+# Telegram 客户端（监听用）
+telethon
+
+# Web API（后台管理）
+fastapi
+uvicorn
+
+# 登录鉴权
+python-jose
+passlib[bcrypt]
+
+# 数据存储
+psycopg2-binary
+redis
+
+# HTTP 请求（QQ API）
+requests
+
+# 图片压缩
+pillow
+
+# WebSocket 保活（QQ 频道发消息要求机器人保持 WS 在线）
+websocket-client
