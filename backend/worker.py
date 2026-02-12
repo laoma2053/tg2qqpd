@@ -15,6 +15,142 @@ r = redis.Redis(host=os.getenv("REDIS_HOST"), decode_responses=True)
 
 BOT_API_BASE = os.getenv("QQ_API_BASE", "https://api.sgroup.qq.com").rstrip("/")
 
+# 纯 env 模式：可只填 guild_id，让程序自动选择第一个“文字子频道”作为发送目标
+QQ_TARGET_CHANNEL_ID = (os.getenv("QQ_TARGET_CHANNEL_ID") or "").strip()
+QQ_TARGET_GUILD_ID = (os.getenv("QQ_TARGET_GUILD_ID") or "").strip()
+
+
+def _log(level: str, msg: str):
+    # 简单结构化，方便 docker logs grep
+    ts = time.strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{ts}][{level}] {msg}")
+
+
+# 防风控：发送间隔（秒）
+try:
+    SEND_INTERVAL = float(os.getenv("SEND_INTERVAL", "1.5"))
+except Exception:
+    SEND_INTERVAL = 1.5
+
+
+def _guess_first_text_channel_id() -> str | None:
+    """从 guild_id 自动挑选一个可用的“可发言频道” channel_id。
+
+    兼容：
+    - 旧逻辑：type=0（文字）
+    - 新频道形态：type=10007/10011 等（你当前实际返回就是这些）
+
+    选择策略：
+    1) 优先选择 speak_permission == 1 的频道
+    2) type 优先顺序：0 -> 10007/10011/…（可扩展）
+    3) 跳过明显的分类节点（常见 type=4）
+    4) 实在找不到就回退到第一个带 id 的频道
+    """
+    if not QQ_TARGET_GUILD_ID:
+        return None
+
+    # 已知可发消息的类型（会因 QQ 频道形态而变化，先覆盖常见）
+    preferred_types = [0, 10007, 10011]
+    skip_types = {4}
+
+    try:
+        resp = requests.get(
+            f"{BOT_API_BASE}/guilds/{QQ_TARGET_GUILD_ID}/channels",
+            headers=auth_headers(),
+            timeout=15,
+        )
+        if not resp.ok:
+            _log(
+                "ERROR",
+                f"guild channels list failed. guild_id={QQ_TARGET_GUILD_ID} status={resp.status_code} body={resp.text}",
+            )
+            return None
+
+        data = resp.json()
+        channels = data
+        if isinstance(data, dict):
+            channels = data.get("data") or data.get("channels") or data.get("items") or []
+
+        if not isinstance(channels, list):
+            return None
+
+        def _cid(ch: dict) -> str | None:
+            cid = ch.get("id") or ch.get("channel_id")
+            return str(cid) if cid else None
+
+        def _type_int(ch: dict) -> int | None:
+            try:
+                return int(ch.get("type"))
+            except Exception:
+                return None
+
+        def _can_speak(ch: dict) -> bool:
+            # speak_permission: 1 表示可发言（你返回里有这个字段）
+            try:
+                return int(ch.get("speak_permission", 0)) == 1
+            except Exception:
+                return False
+
+        # 1) 优先：可发言 + 优先类型
+        for t in preferred_types:
+            for ch in channels:
+                if not isinstance(ch, dict):
+                    continue
+                if _type_int(ch) in skip_types:
+                    continue
+                if _type_int(ch) == t and _can_speak(ch):
+                    cid = _cid(ch)
+                    if cid:
+                        return cid
+
+        # 2) 次优：优先类型（不强制 speak_permission 字段存在）
+        for t in preferred_types:
+            for ch in channels:
+                if not isinstance(ch, dict):
+                    continue
+                if _type_int(ch) in skip_types:
+                    continue
+                if _type_int(ch) == t:
+                    cid = _cid(ch)
+                    if cid:
+                        return cid
+
+        # 3) 兜底：任何可发言的频道
+        for ch in channels:
+            if not isinstance(ch, dict):
+                continue
+            if _type_int(ch) in skip_types:
+                continue
+            if _can_speak(ch):
+                cid = _cid(ch)
+                if cid:
+                    return cid
+
+        # 4) 最后兜底：第一个有 id 的
+        for ch in channels:
+            if isinstance(ch, dict) and _cid(ch):
+                return _cid(ch)
+
+        return None
+    except Exception as e:
+        _log("ERROR", f"guild channels list exception. guild_id={QQ_TARGET_GUILD_ID} err={e}")
+        return None
+
+
+# worker 侧最终使用的目标 channel_id：
+# - 优先使用 QQ_TARGET_CHANNEL_ID
+# - 若为空且提供了 QQ_TARGET_GUILD_ID，则自动选择
+DEFAULT_SEND_CHANNEL_ID = QQ_TARGET_CHANNEL_ID or _guess_first_text_channel_id() or ""
+
+_log(
+    "INFO",
+    "worker boot: "
+    f"api_base={BOT_API_BASE} "
+    f"has_target_channel={bool(QQ_TARGET_CHANNEL_ID)} has_target_guild={bool(QQ_TARGET_GUILD_ID)} "
+    f"default_send_channel_id={DEFAULT_SEND_CHANNEL_ID or '(empty)'} "
+    f"send_interval={SEND_INTERVAL}",
+)
+
 ZJ_BASE_URL = os.getenv("ZJ_BASE_URL", "www.zhuiju.us")
 ZJ_SUFFIX_NOTE = os.getenv("ZJ_SUFFIX_NOTE", "访问搜影片名或进QQ群搜索")
 
@@ -174,7 +310,15 @@ while True:
 
     chat_id = int(task["chat_id"])
     msg_id = int(task["msg_id"])
-    qq_channel_id = str(task["qq_channel_id"])
+
+    # 纯 env 模式：优先用运行时自动选择到的 DEFAULT_SEND_CHANNEL_ID；否则回退任务内携带的 qq_channel_id
+    qq_channel_id = DEFAULT_SEND_CHANNEL_ID or str(task.get("qq_channel_id") or "")
+
+    if not qq_channel_id:
+        save_dead(chat_id, msg_id, "missing QQ target channel_id (QQ_TARGET_CHANNEL_ID empty)", task)
+        _log("ERROR", f"drop to dead: missing target channel_id. chat_id={chat_id} msg_id={msg_id}")
+        time.sleep(1.0)
+        continue
 
     # 模板处理
     content = apply_template(
@@ -221,8 +365,8 @@ while True:
                 text_blob = None
 
             if _is_auth_error(resp, text_blob) or _is_online_required_error(resp, text_blob):
-                print(f"[worker] send failed, will retry once after refresh/ws. status={resp.status_code} body={text_blob}")
-                print(f"[worker] token_status(before)={get_token_status()} ws_ready={_keepalive.ready} ws_err={_keepalive.last_error}")
+                _log("WARN", f"send failed, will retry once after refresh/ws. status={resp.status_code} body={text_blob}")
+                _log("INFO", f"token_status(before)={get_token_status()} ws_ready={_keepalive.ready} ws_err={_keepalive.last_error}")
 
                 # 强制刷新一次 token（如果拿不到新 token，会继续使用旧 token）
                 _ = auth_headers(force_refresh=True)
@@ -252,8 +396,10 @@ while True:
 
     if success:
         mark_processed(chat_id, msg_id)
+        _log("INFO", f"sent ok. chat_id={chat_id} msg_id={msg_id} channel_id={qq_channel_id}")
     else:
         save_dead(chat_id, msg_id, err or "send failed", task)
+        _log("ERROR", f"sent failed -> dead. chat_id={chat_id} msg_id={msg_id} channel_id={qq_channel_id} err={err}")
 
     # 防风控：宁慢勿快
-    time.sleep(1.5)
+    time.sleep(max(SEND_INTERVAL, 0.2))

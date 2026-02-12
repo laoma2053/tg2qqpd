@@ -124,16 +124,23 @@ class QQWsKeepAlive:
             time.sleep(float(self._heartbeat_interval))
 
     def _log_loop(self):
+        # 限频输出：默认每 60s 打印一次（由 QQ_WS_LOG_INTERVAL_SECONDS 控制）
         while not self._stop.is_set():
-            if self.ready:
-                age = int(time.time() - (self._last_heartbeat_at or time.time()))
-                print(
-                    f"[qq-ws] ready url={self._connected_url} seq={self._last_seq} "
-                    f"heartbeat_interval={self._heartbeat_interval:.1f}s last_hb_age={age}s"
-                )
-            else:
-                err = self._last_error or "(none)"
-                print(f"[qq-ws] not-ready last_error={err}")
+            try:
+                if self.ready:
+                    age = int(time.time() - (self._last_heartbeat_at or time.time()))
+                    print(
+                        f"[qq-ws] ready url={self._connected_url} seq={self._last_seq} "
+                        f"heartbeat_interval={self._heartbeat_interval:.1f}s last_hb_age={age}s"
+                    )
+                else:
+                    err = self._last_error or "(none)"
+                    print(f"[qq-ws] not-ready last_error={err}")
+            except Exception:
+                # 永不让日志线程崩
+                pass
+
+            # 至少 5s，但默认 60s（避免刷屏）
             time.sleep(max(QQ_WS_LOG_INTERVAL_SECONDS, 5))
 
     def _run(self):

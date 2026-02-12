@@ -1,5 +1,29 @@
 version: "3.9"
 
+# ==================================================
+# tg2qqpd 部署/运维速查（写在这里方便你维护）
+# ==================================================
+# 1) 在云服务器准备好项目目录（包含 docker-compose.yml、backend/、.env、data/）
+# 2) 启动/重建（有 Docker Compose v2 的情况通常是 docker compose ...）
+#    - 首次构建并后台启动：
+#      docker compose up -d --build
+#    - 查看状态：
+#      docker compose ps
+#    - 查看日志：
+#      docker compose logs -f --tail=200
+#    - 重启：
+#      docker compose restart
+#
+# 管理接口（backend 容器 8000 端口）：
+# - 健康检查（不鉴权）：
+#   http://<服务器IP或域名>:8000/healthz
+# - 登录拿 JWT：
+#   POST http://<服务器IP或域名>:8000/api/login   body: {"password":"$ADMIN_PASS"}
+# - QQ 调试接口（需 Bearer token）：
+#   GET  http://<服务器IP或域名>:8000/api/qq/guilds
+#   GET  http://<服务器IP或域名>:8000/api/qq/pick-default-channel?guild_id=...
+# ==================================================
+
 # =========================
 # 所有服务共用一个内部网络
 # 不对外暴露 redis / postgres
@@ -8,20 +32,13 @@ networks:
   tg2qq-net:
     driver: bridge
 
-# =========================
-# 持久化数据卷
-# =========================
-volumes:
-  pg_data:        # PostgreSQL 数据
-  tg_session:     # Telegram session（非常重要）
-  tg_media:       # TG 下载的媒体文件（backend 与 worker 共享）
-
 services:
 
   # =========================
   # PostgreSQL：只做存储
   # =========================
   postgres:
+    container_name: tg2qqpd-postgres
     image: postgres:15
     restart: always
     environment:
@@ -29,39 +46,36 @@ services:
       POSTGRES_USER: tg2qq
       POSTGRES_PASSWORD: tg2qqpass
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
     networks:
       - tg2qq-net
-    # ❗❗❗ 不要加 ports
-    # 数据库永远不应该暴露到公网
 
   # =========================
   # Redis：队列 & 解耦
   # =========================
   redis:
+    container_name: tg2qqpd-redis
     image: redis:7
     restart: always
     networks:
       - tg2qq-net
-    # ❗ 同样不要暴露端口
-    # Redis 一旦暴露 = 高风险
 
   # =========================
   # backend：TG 监听 + Web API
   # =========================
   backend:
+    container_name: tg2qqpd-backend
     build: ./backend
     restart: always
     env_file:
       - .env
+    environment:
+      - TG_SESSION_DIR=/app/sessions
     volumes:
-      # 🔑 Telegram 登录态（不挂载=每次重登）
-      - tg_session:/app
-      # 🔥 配置热更新的关键
-      - ./mapping.json:/app/mapping.json
-      - ./blacklist.json:/app/blacklist.json
-      # 🖼️ TG 媒体文件共享（供 worker 读取）
-      - tg_media:/tmp
+      # Telegram 登录态（挂载到 /app/sessions，避免覆盖应用代码）
+      - ./data/tg_session:/app/sessions
+      # TG 媒体文件共享（供 worker 读取）
+      - ./data/tg_media:/tmp
     depends_on:
       - postgres
       - redis
@@ -76,16 +90,18 @@ services:
   # worker：真正发 QQ 消息
   # =========================
   worker:
+    container_name: tg2qqpd-worker
     build: ./backend
     command: python worker.py
     restart: always
     env_file:
       - .env
+    environment:
+      - TG_SESSION_DIR=/app/sessions
     volumes:
-      - ./mapping.json:/app/mapping.json
-      - ./blacklist.json:/app/blacklist.json
-      # 🖼️ 与 backend 共享 /tmp（读取下载的图片并压缩/上传）
-      - tg_media:/tmp
+      - ./data/tg_media:/tmp
+      # Telegram 登录态（如果后续需要 worker 侧用到 session，也保留同一路径）
+      - ./data/tg_session:/app/sessions
     depends_on:
       - redis
       - postgres

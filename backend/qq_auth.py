@@ -51,6 +51,8 @@ def get_access_token(force_refresh: bool = False) -> str:
 
     force_refresh=True 可用于在鉴权失败后强制重新拉取。
     """
+    global _cached_token, _expires_at, _last_refresh_error, _last_refresh_at
+
     if MANUAL_ACCESS_TOKEN:
         return MANUAL_ACCESS_TOKEN
 
@@ -63,7 +65,6 @@ def get_access_token(force_refresh: bool = False) -> str:
         ):
             return _cached_token
 
-        global _cached_token, _expires_at, _last_refresh_error, _last_refresh_at
         try:
             token, expires_in = _fetch_access_token()
             _cached_token = token
