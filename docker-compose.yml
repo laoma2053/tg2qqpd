@@ -42,6 +42,7 @@ services:
     image: postgres:15
     restart: always
     environment:
+      TZ: Asia/Shanghai
       POSTGRES_DB: tg2qq
       POSTGRES_USER: tg2qq
       POSTGRES_PASSWORD: tg2qqpass
@@ -57,6 +58,8 @@ services:
     container_name: tg2qqpd-redis
     image: redis:7
     restart: always
+    environment:
+      TZ: Asia/Shanghai
     networks:
       - tg2qq-net
 
@@ -70,12 +73,14 @@ services:
     env_file:
       - .env
     environment:
-      - TG_SESSION_DIR=/app/sessions
+      - TZ=Asia/Shanghai
     volumes:
       # Telegram 登录态（挂载到 /app/sessions，避免覆盖应用代码）
       - ./data/tg_session:/app/sessions
       # TG 媒体文件共享（供 worker 读取）
       - ./data/tg_media:/tmp
+      # 统一配置文件
+      - ./config.yaml:/app/config.yaml:ro
     depends_on:
       - postgres
       - redis
@@ -97,11 +102,13 @@ services:
     env_file:
       - .env
     environment:
-      - TG_SESSION_DIR=/app/sessions
+      - TZ=Asia/Shanghai
     volumes:
       - ./data/tg_media:/tmp
-      # Telegram 登录态（如果后续需要 worker 侧用到 session，也保留同一路径）
+      # Telegram 登录态
       - ./data/tg_session:/app/sessions
+      # 统一配置文件
+      - ./config.yaml:/app/config.yaml:ro
     depends_on:
       - redis
       - postgres

@@ -1,0 +1,227 @@
+[2026-02-12 21:43:49][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+Please enter your phone (or bot token): [2026-02-12 21:43:53][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+[2026-02-12 21:43:55][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Please enter your phone (or bot token): [2026-02-12 21:43:56][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+[2026-02-12 21:43:58][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+Please enter your phone (or bot token): [2026-02-12 21:43:59][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+[2026-02-12 21:44:02][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+Please enter your phone (or bot token): [2026-02-12 21:44:03][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+[2026-02-12 21:44:06][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Please enter your phone (or bot token): [2026-02-12 21:44:07][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+[2026-02-12 21:44:10][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+Please enter your phone (or bot token): [2026-02-12 21:44:11][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+[2026-02-12 21:44:16][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+Please enter your phone (or bot token): [2026-02-12 21:44:18][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+[2026-02-12 21:44:26][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Please enter your phone (or bot token): [2026-02-12 21:44:27][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+[2026-02-12 21:44:42][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+Please enter your phone (or bot token): [2026-02-12 21:44:43][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+[2026-02-12 21:45:10][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Please enter your phone (or bot token): [2026-02-12 21:45:11][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+[2026-02-12 21:46:04][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+Please enter your phone (or bot token): [2026-02-12 21:46:06][ERROR] Telethon requires interactive login (phone/code), but container is non-interactive. Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, then input phone/code to generate session under TG_SESSION_DIR.
+Traceback (most recent call last):
+  File "/app/app.py", line 307, in <module>
+    client.start()
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 128, in start
+    else self.loop.run_until_complete(coro)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 167, in _start
+    value = phone()
+            ^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/telethon/client/auth.py", line 22, in <lambda>
+    phone: typing.Union[typing.Callable[[], str], str] = lambda: input('Please enter your phone (or bot token): '),
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+[2026-02-12 21:48:28][INFO] backend boot: tg_session=userbot tg_sources=['@Q_dianshiju', '@Q_dongman', '@Q_dianying', '@Q_jilupian', '@Aliyun_4K_Movies'] forward_enabled=True gray_ratio=1 has_qq_target_channel=False
+[2026-02-12 21:48:29][INFO] tg sources resolved: 5 / 5
+[2026-02-12 21:48:29][INFO] Telethon event handler registered: chats=[-1001754812960, -1001934703847, -1001941021574, -1001723949888, -1001674292882]
+[2026-02-12 21:48:29][INFO] Telethon event loop is running - TG messages will now be received.
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     182.150.165.118:4864 - "GET /healthz HTTP/1.1" 200 OK
+INFO:     182.150.165.118:4864 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     45.135.193.11:34910 - "GET / HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.env HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.env.local HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.env.staging HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.env.production HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.env.development HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.aws/credentials HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /app/.env HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /config.json HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.env?import&raw?? HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.env.local?import&raw?? HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.env.staging?import&raw?? HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.env.production?import&raw?? HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.env.development?import&raw?? HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /.aws/credentials?import&raw?? HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /app/.env?import&raw?? HTTP/1.1" 404 Not Found
+INFO:     45.135.193.11:34910 - "GET /config.json?import&raw?? HTTP/1.1" 404 Not Found
+INFO:     128.8.124.68:53124 - "GET / HTTP/1.1" 404 Not Found

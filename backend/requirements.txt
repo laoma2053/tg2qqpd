@@ -21,3 +21,6 @@ pillow
 
 # WebSocket 保活（QQ 频道发消息要求机器人保持 WS 在线）
 websocket-client
+
+# YAML 配置解析（transforms.yaml 文案清洗规则）
+pyyaml

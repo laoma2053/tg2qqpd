@@ -1,12 +1,14 @@
 import os
 import json
 import random
+import re
 import time
 from pydantic import BaseModel
 from fastapi import FastAPI
 from telethon import TelegramClient, events
 import redis
 
+from config import CFG, get as cfg_get
 from db import init_db, is_processed
 from auth import login as do_login
 from auth import auth_required
@@ -15,11 +17,11 @@ from api.system import router as system_router
 from api.deadletters import router as deadletters_router
 from api.qq_debug import router as qq_debug_router
 
-# === Telegram 配置 ===
-TG_API_ID = int(os.getenv("TG_API_ID"))
-TG_API_HASH = os.getenv("TG_API_HASH")
-SESSION = os.getenv("TG_SESSION", "userbot")
-TG_SESSION_DIR = (os.getenv("TG_SESSION_DIR") or "/app/sessions").rstrip("/")
+# === Telegram 配置（从 config.yaml）===
+TG_API_ID = int(cfg_get("telegram.api_id"))
+TG_API_HASH = cfg_get("telegram.api_hash")
+SESSION = cfg_get("telegram.session", "userbot")
+TG_SESSION_DIR = (cfg_get("telegram.session_dir") or "/app/sessions").rstrip("/")
 
 # 确保 session 目录存在
 try:
@@ -70,68 +72,77 @@ def _normalize_gray_ratio(v) -> float:
 
 
 def pass_filter(text: str, rule: dict) -> bool:
-    """关键词/正则过滤（只看文字）
+    """关键词/正则过滤（黑名单优先 + 可选白名单）
 
-    mode:
-      - block：命中即丢弃
-      - allow：命中才转发
+    逻辑（与另一个 TG 项目的 filter_text 完全对齐）：
+    1) block 命中 → 直接丢弃（最高优先级）
+    2) 若 require_allows=true，则必须命中 allow 关键词/正则才放行
+    3) 若 require_allows=false（默认），allow 不生效，block 没命中就放行
+
+    配置来源：config.yaml → rules.filter
     """
     if not rule:
         return True
-    import re
 
     text = text or ""
-    mode = rule.get("mode", "block")
-    keywords = rule.get("keywords", [])
-    regexs = rule.get("regex", [])
 
-    hit = any(k in text for k in keywords) if keywords else False
-    if not hit and regexs:
-        for rg in regexs:
-            if re.search(rg, text):
-                hit = True
-                break
+    # --- block（黑名单）：命中即丢弃 ---
+    block_kw = rule.get("block_keywords") or rule.get("keywords") or []
+    block_re = rule.get("block_regex") or rule.get("regex") or []
 
-    return (not hit) if mode == "block" else hit
+    if block_kw and any(k in text for k in block_kw):
+        return False
+    if block_re:
+        for rg in block_re:
+            try:
+                if re.search(rg, text):
+                    return False
+            except re.error:
+                pass
+
+    # --- allow（白名单）：require_allows=true 时必须命中才放行 ---
+    require_allows = rule.get("require_allows", False)
+    if require_allows:
+        allow_kw = rule.get("allow_keywords") or []
+        allow_re = rule.get("allow_regex") or []
+
+        if not allow_kw and not allow_re:
+            # 配置了 require_allows 但没给任何 allow 规则 → 全部放行（避免误杀）
+            return True
+
+        hit_allow = False
+        if allow_kw and any(k in text for k in allow_kw):
+            hit_allow = True
+        if not hit_allow and allow_re:
+            for rg in allow_re:
+                try:
+                    if re.search(rg, text):
+                        hit_allow = True
+                        break
+                except re.error:
+                    pass
+        return hit_allow
+
+    return True
 
 
-def _env_bool(name: str, default: bool = False) -> bool:
-    v = os.getenv(name)
-    if v is None:
-        return default
-    return str(v).strip().lower() in ("1", "true", "yes", "y", "on")
-
-
-def _env_csv(name: str) -> list[str]:
-    raw = (os.getenv(name) or "").strip()
-    if not raw:
-        return []
-    return [x.strip() for x in raw.split(",") if x.strip()]
-
-
-def _env_str(name: str, default: str = "") -> str:
-    v = os.getenv(name)
-    return default if v is None else str(v)
-
-
-def _build_env_rule() -> dict:
+def _build_forward_conf() -> dict:
+    """从 config.yaml 构建转发配置（每次消息调用，支持热重载后的潜在扩展）。"""
+    fwd = CFG.get("forward") or {}
+    fltr = cfg_get("rules.filter") or {}
     return {
-        "enabled": _env_bool("FORWARD_ENABLED", True),
-        "qq_channel_id": (os.getenv("QQ_TARGET_CHANNEL_ID") or "").strip(),
-        "gray_ratio": os.getenv("GRAY_RATIO", "1"),
+        "enabled": fwd.get("enabled", True),
+        "qq_channel_id": str(cfg_get("qq.target_channel_id") or "").strip(),
+        "gray_ratio": fwd.get("gray_ratio", 1),
         "template": {
-            "prefix": os.getenv("TEMPLATE_PREFIX", ""),
-            "suffix": os.getenv("TEMPLATE_SUFFIX", ""),
+            "prefix": fwd.get("template_prefix", ""),
+            "suffix": fwd.get("template_suffix", ""),
         },
-        "filter": {
-            "mode": (os.getenv("FILTER_MODE") or "block").strip() or "block",
-            "keywords": _env_csv("FILTER_KEYWORDS"),
-            "regex": _env_csv("FILTER_REGEX"),
-        },
+        "filter": fltr,
     }
 
 
-# === 纯 ENV 模式：username -> chat_id 白名单缓存 ===
+# === TG 源 -> chat_id 白名单缓存 ===
 _ENV_RESOLVED_SOURCES: set[str] = set()
 
 
@@ -140,19 +151,25 @@ def _log(level: str, msg: str):
     print(f"[{ts}][{level}] {msg}")
 
 
-async def refresh_env_sources_cache() -> set[str]:
-    """解析 TG_SOURCES（多个 @username）为 peer_id 字符串集合。"""
+async def refresh_env_sources_cache() -> list[int]:
+    """解析 telegram.sources 为 peer_id 集合，同时返回 int id 列表供 chats= 过滤。"""
     from telethon.utils import get_peer_id
 
-    sources = _env_csv("TG_SOURCES")
+    sources = cfg_get("telegram.sources") or []
     resolved: set[str] = set()
+    entity_ids: list[int] = []
 
     for u in sources:
-        if not u.startswith("@"): 
+        u = str(u).strip()
+        if not u:
+            continue
+        if not u.startswith("@"):
             u = "@" + u
         try:
             entity = await client.get_entity(u)
-            resolved.add(str(get_peer_id(entity)))
+            pid = str(get_peer_id(entity))
+            resolved.add(pid)
+            entity_ids.append(int(pid))
         except Exception as e:
             _log("WARN", f"resolve tg source failed: {u} err={e}")
             continue
@@ -160,21 +177,21 @@ async def refresh_env_sources_cache() -> set[str]:
     global _ENV_RESOLVED_SOURCES
     _ENV_RESOLVED_SOURCES = resolved
     _log("INFO", f"tg sources resolved: {len(_ENV_RESOLVED_SOURCES)} / {len(sources)}")
-    return resolved
+    return entity_ids
 
 
 def _debug_tg_events_enabled() -> bool:
-    return _env_bool("DEBUG_TG_EVENTS", False)
+    return cfg_get("logging.debug_tg_events", False)
 
 
-@client.on(events.NewMessage)
+# 注意：不再用 @client.on(events.NewMessage) 静态注册。
+# 改为在 _startup() 中解析完 TG_SOURCES 后，用 chats= 参数动态注册，
+# 这样 Telethon 底层只派发白名单频道的消息，其他频道的消息根本不进入回调。
+
 async def on_new_message(event):
     """纯 ENV 模式：
-    - 仅监听 TG_SOURCES 解析出的 chat_id
+    - Telethon 底层已通过 chats= 过滤，只有白名单频道的消息才会触发本回调
     - 统一发送到 QQ_TARGET_CHANNEL_ID（若留空由 worker 通过 guild 自动选）
-
-    调试：
-    - DEBUG_TG_EVENTS=true 时会打印每条消息的判定路径，帮助定位“TG 有消息但没入队”。
     """
     chat_id_str = str(event.chat_id)
     msg_id = event.message.id
@@ -182,8 +199,7 @@ async def on_new_message(event):
     if _debug_tg_events_enabled():
         _log(
             "INFO",
-            f"tg_event recv: chat_id={chat_id_str} msg_id={msg_id} "
-            f"resolved_sources={len(_ENV_RESOLVED_SOURCES)}",
+            f"tg_event recv: chat_id={chat_id_str} msg_id={msg_id}",
         )
 
     # 去重
@@ -192,23 +208,7 @@ async def on_new_message(event):
             _log("INFO", f"tg_event drop: processed chat_id={chat_id_str} msg_id={msg_id}")
         return
 
-    # 白名单
-    if not _ENV_RESOLVED_SOURCES:
-        if _debug_tg_events_enabled():
-            _log("WARN", "tg_event drop: resolved sources empty (did refresh_env_sources_cache run?)")
-        return
-
-    if chat_id_str not in _ENV_RESOLVED_SOURCES:
-        if _debug_tg_events_enabled():
-            # 只打印前几个，避免太长
-            sample = list(sorted(_ENV_RESOLVED_SOURCES))[:10]
-            _log(
-                "INFO",
-                f"tg_event drop: chat_id not in whitelist chat_id={chat_id_str} sample_whitelist={sample}",
-            )
-        return
-
-    conf = _build_env_rule()
+    conf = _build_forward_conf()
 
     if not conf.get("enabled", True):
         if _debug_tg_events_enabled():
@@ -259,42 +259,43 @@ def api_login(req: LoginReq):
 
 @app.get("/healthz")
 def healthz():
-    """不鉴权健康检查。
-
-    用于：Nginx/容器平台探活、以及你部署后快速确认服务是否启动。
-    注意：不返回 secret/token。
-    """
-    sources = _env_csv("TG_SOURCES")
+    """不鉴权健康检查。"""
+    sources = cfg_get("telegram.sources") or []
+    fwd = CFG.get("forward") or {}
     return {
         "ok": True,
         "service": "tg2qqpd-backend",
-        "has_tg_api": bool(os.getenv("TG_API_ID")) and bool(os.getenv("TG_API_HASH")),
+        "has_tg_api": bool(cfg_get("telegram.api_id")) and bool(cfg_get("telegram.api_hash")),
         "tg_session": SESSION,
         "tg_sources_count": len(sources),
         "tg_sources_resolved": len(_ENV_RESOLVED_SOURCES),
-        "forward_enabled": _env_bool("FORWARD_ENABLED", True),
-        "gray_ratio": os.getenv("GRAY_RATIO", "1"),
-        "has_qq_target_channel": bool((os.getenv("QQ_TARGET_CHANNEL_ID") or "").strip()),
-        "has_qq_target_guild": bool((os.getenv("QQ_TARGET_GUILD_ID") or "").strip()),
+        "forward_enabled": fwd.get("enabled", True),
+        "gray_ratio": fwd.get("gray_ratio", 1),
+        "has_qq_target_channel": bool(str(cfg_get("qq.target_channel_id") or "").strip()),
+        "has_qq_target_guild": bool(str(cfg_get("qq.target_guild_id") or "").strip()),
     }
 
 
 if __name__ == "__main__":
+    import asyncio
+    import uvicorn
+
     init_db()
 
+    fwd = CFG.get("forward") or {}
     _log(
         "INFO",
         "backend boot: "
         f"tg_session={SESSION} "
-        f"tg_sources={os.getenv('TG_SOURCES','').strip()} "
-        f"forward_enabled={os.getenv('FORWARD_ENABLED','true')} "
-        f"gray_ratio={os.getenv('GRAY_RATIO','1')} "
-        f"has_qq_target_channel={bool((os.getenv('QQ_TARGET_CHANNEL_ID') or '').strip())}",
+        f"tg_sources={cfg_get('telegram.sources', [])} "
+        f"forward_enabled={fwd.get('enabled', True)} "
+        f"gray_ratio={fwd.get('gray_ratio', 1)} "
+        f"has_qq_target_channel={bool(str(cfg_get('qq.target_channel_id') or '').strip())}",
     )
 
     # 首次部署：容器后台运行无法交互输入验证码/手机号。
     # 方案：运维先用 TG_LOGIN_ONLY=1 交互式跑一次生成 session 文件，再正常启动。
-    if _env_bool("TG_LOGIN_ONLY", False):
+    if os.getenv("TG_LOGIN_ONLY", "").strip().lower() in ("1", "true", "yes"):
         _log("INFO", "TG_LOGIN_ONLY=1 set, will run Telethon interactive login only.")
         client.start()  # 这里会要求输入手机号/验证码
         _log("INFO", "Telethon login done. Session saved. Now exit.")
@@ -313,13 +314,44 @@ if __name__ == "__main__":
         )
         raise
 
-    # 启动时解析一次 TG_SOURCES
-    try:
-        with client:
-            client.loop.run_until_complete(refresh_env_sources_cache())
-    except Exception as e:
-        _log("ERROR", f"refresh_env_sources_cache failed: {e}")
+    # ---------- 关键：让 Telethon 和 Uvicorn 共享同一个 asyncio 事件循环 ----------
+    # Telethon 必须持续运行在 asyncio loop 里才能收到消息事件。
+    # 之前的 uvicorn.run() 会创建新的事件循环，Telethon 的 event handler 不会被触发。
+    # 解决方案：在 Telethon 已有的 loop 中用 uvicorn.Server 启动 HTTP 服务。
 
-    import uvicorn
+    loop = client.loop  # Telethon 已绑定的 asyncio 事件循环
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    async def _startup():
+        """在同一个事件循环里完成：TG 源解析 -> 注册事件监听 -> Uvicorn 启动。"""
+        # 确保 Telethon 连接仍然有效
+        if not client.is_connected():
+            await client.connect()
+
+        # 解析 TG_SOURCES，返回 entity id 列表
+        entity_ids = []
+        try:
+            entity_ids = await refresh_env_sources_cache()
+        except Exception as e:
+            _log("ERROR", f"refresh_env_sources_cache failed: {e}")
+
+        # 动态注册事件处理器，chats= 限定只接收白名单频道的消息
+        # 这样 Telethon 底层直接过滤，其他频道的消息根本不会进入回调
+        if entity_ids:
+            client.add_event_handler(
+                on_new_message,
+                events.NewMessage(chats=entity_ids),
+            )
+            _log("INFO", f"Telethon event handler registered: chats={entity_ids}")
+        else:
+            _log("WARN", "No TG sources resolved, event handler NOT registered (no messages will be forwarded)")
+
+        _log("INFO", "Telethon event loop is running - TG messages will now be received.")
+
+        # 启动 Uvicorn（作为同一个 loop 内的 Server，不会抢占事件循环）
+        config = uvicorn.Config(app, host="0.0.0.0", port=8000, loop="none")
+        server = uvicorn.Server(config)
+        await server.serve()
+
+    # 运行：Telethon event handler（on_new_message）和 Uvicorn 同时活跃在同一个 loop
+    with client:
+        loop.run_until_complete(_startup())

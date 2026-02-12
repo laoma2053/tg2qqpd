@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Body
+import json
 import os
 import redis
 
@@ -35,7 +36,7 @@ def api_retry_one(dead_id: int):
         return {"ok": False, "reason": "not_found"}
 
     payload = payloads[0]["payload"]
-    r.lpush("queue", __import__("json").dumps(payload, ensure_ascii=False))
+    r.lpush("queue", json.dumps(payload, ensure_ascii=False))
     delete_dead_by_ids([dead_id])
     return {"ok": True}
 
@@ -48,7 +49,7 @@ def api_retry_batch(ids: list[int] = Body(..., embed=True)):
     payload_rows = get_dead_payloads_by_ids(ids)
     for row in payload_rows:
         payload = row["payload"]
-        r.lpush("queue", __import__("json").dumps(payload, ensure_ascii=False))
+        r.lpush("queue", json.dumps(payload, ensure_ascii=False))
 
     # 入队后删除死信（避免重复重放）
     delete_dead_by_ids([r["id"] for r in payload_rows])

@@ -3,16 +3,18 @@ import time
 import threading
 import requests
 
-BOT_API_BASE = os.getenv("QQ_API_BASE", "https://api.sgroup.qq.com").rstrip("/")
+from config import get as cfg_get
 
-APP_ID = os.getenv("QQ_APP_ID", "").strip()
-APP_SECRET = os.getenv("QQ_APP_SECRET", "").strip()
+BOT_API_BASE = str(cfg_get("qq.api_base", "https://api.sgroup.qq.com")).rstrip("/")
 
-# 兼容：若用户手动提供 QQ_ACCESS_TOKEN，则优先用它（不做刷新）
-MANUAL_ACCESS_TOKEN = os.getenv("QQ_ACCESS_TOKEN", "").strip()
+APP_ID = str(cfg_get("qq.app_id", "")).strip()
+APP_SECRET = str(cfg_get("qq.app_secret", "")).strip()
+
+# 兼容：若用户手动提供 access_token，则优先用它（不做刷新）
+MANUAL_ACCESS_TOKEN = str(cfg_get("qq.access_token", "")).strip()
 
 # 提前多少秒刷新 token
-REFRESH_SKEW_SECONDS = int(os.getenv("QQ_ACCESS_TOKEN_REFRESH_SKEW", "60"))
+REFRESH_SKEW_SECONDS = int(cfg_get("qq.access_token_refresh_skew", 60))
 
 _lock = threading.Lock()
 _cached_token: str | None = None

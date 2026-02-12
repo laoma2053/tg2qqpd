@@ -5,10 +5,11 @@ import requests
 from fastapi import APIRouter, HTTPException, Query
 
 from qq_auth import auth_headers
+from config import get as cfg_get
 
 router = APIRouter(prefix="/api/qq", tags=["qq"])
 
-BOT_API_BASE = os.getenv("QQ_API_BASE", "https://api.sgroup.qq.com").rstrip("/")
+BOT_API_BASE = str(cfg_get("qq.api_base", "https://api.sgroup.qq.com")).rstrip("/")
 
 
 @router.get("/guilds")

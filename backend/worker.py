@@ -5,7 +5,9 @@ import requests
 import redis
 from PIL import Image
 import re
+import yaml
 
+from config import CFG, get as cfg_get
 from db import mark_processed, save_dead
 
 from qq_auth import auth_headers, get_token_status
@@ -13,11 +15,11 @@ from qq_ws_keepalive import QQWsKeepAlive
 
 r = redis.Redis(host=os.getenv("REDIS_HOST"), decode_responses=True)
 
-BOT_API_BASE = os.getenv("QQ_API_BASE", "https://api.sgroup.qq.com").rstrip("/")
+BOT_API_BASE = str(cfg_get("qq.api_base", "https://api.sgroup.qq.com")).rstrip("/")
 
-# 纯 env 模式：可只填 guild_id，让程序自动选择第一个“文字子频道”作为发送目标
-QQ_TARGET_CHANNEL_ID = (os.getenv("QQ_TARGET_CHANNEL_ID") or "").strip()
-QQ_TARGET_GUILD_ID = (os.getenv("QQ_TARGET_GUILD_ID") or "").strip()
+# 目标频道
+QQ_TARGET_CHANNEL_ID = str(cfg_get("qq.target_channel_id") or "").strip()
+QQ_TARGET_GUILD_ID = str(cfg_get("qq.target_guild_id") or "").strip()
 
 
 def _log(level: str, msg: str):
@@ -28,7 +30,7 @@ def _log(level: str, msg: str):
 
 # 防风控：发送间隔（秒）
 try:
-    SEND_INTERVAL = float(os.getenv("SEND_INTERVAL", "1.5"))
+    SEND_INTERVAL = float(cfg_get("qq.send_interval", 1.5))
 except Exception:
     SEND_INTERVAL = 1.5
 
@@ -151,8 +153,67 @@ _log(
     f"send_interval={SEND_INTERVAL}",
 )
 
-ZJ_BASE_URL = os.getenv("ZJ_BASE_URL", "www.zhuiju.us")
-ZJ_SUFFIX_NOTE = os.getenv("ZJ_SUFFIX_NOTE", "访问搜影片名或进QQ群搜索")
+# ============================================================
+# YAML 驱动的文案清洗规则引擎
+# ============================================================
+# 规则来源：config.yaml → rules.transforms
+# 修改 config.yaml 后 docker compose restart worker 即可生效。
+# ============================================================
+
+_FLAG_MAP = {
+    "s": re.DOTALL,
+    "m": re.MULTILINE,
+    "i": re.IGNORECASE,
+}
+
+# 多空行收敛（内置，不可关闭）
+_RE_MULTI_NEWLINE = re.compile(r"\n{3,}")
+
+
+def _parse_flags(flags_str: str) -> int:
+    """将 "msi" 这样的 flag 字符串转成 re 标志位组合。"""
+    result = 0
+    for ch in flags_str.lower():
+        if ch in _FLAG_MAP:
+            result |= _FLAG_MAP[ch]
+    return result
+
+
+def _load_transforms() -> list[dict]:
+    """从 config.yaml 的 rules.transforms 加载并预编译清洗规则。
+
+    返回列表，每个元素:
+      - type="regex_replace": {"type", "compiled": re.Pattern, "repl": str}
+      - type="append":        {"type", "text": str}
+    """
+    raw_rules = cfg_get("rules.transforms") or []
+    compiled: list[dict] = []
+
+    for idx, rule in enumerate(raw_rules):
+        rtype = rule.get("type", "")
+        if rtype == "regex_replace":
+            pattern = rule.get("pattern", "")
+            repl = rule.get("repl", "")
+            flags_str = rule.get("flags", "ms")
+            try:
+                compiled.append({
+                    "type": "regex_replace",
+                    "compiled": re.compile(pattern, _parse_flags(flags_str)),
+                    "repl": repl,
+                })
+            except re.error as e:
+                _log("ERROR", f"transforms rule #{idx} regex compile failed: {e} pattern={pattern}")
+        elif rtype == "append":
+            text = rule.get("text", "")
+            compiled.append({"type": "append", "text": text})
+        else:
+            _log("WARN", f"transforms rule #{idx} unknown type: {rtype}")
+
+    _log("INFO", f"loaded {len(compiled)} transform rules from config.yaml")
+    return compiled
+
+
+_TRANSFORMS: list[dict] = _load_transforms()
 
 
 def compress_image(src: str, max_size_mb: int = 9) -> str | None:
@@ -248,63 +309,64 @@ def send_with_image(channel_id: str, text: str, image_path: str):
 
 
 def normalize_forward_text(text: str) -> str:
-    """转发前文案清洗规则：
+    """转发前文案清洗 —— 按 transforms.yaml 里的规则依次执行。
 
-    1) 删除：来自/频道/群组/投稿 及其后所有内容（含该行前可能的 emoji 图标）。
-    2) 仅对“网盘链接那一行”做替换：
-       - 行内含 pan.quark.cn/s/xxx 时：
-         * 将该 URL 替换为 ZJ_BASE_URL，并追加备注
-         * 将该行的前缀关键词“夸克/链接/网盘资源链接”等统一规范为“网盘资源链接：”
-       - 不进行全文范围的“夸克”替换（避免误伤影片名/描述）。
+    执行逻辑：
+    1. 遍历 _TRANSFORMS 列表，对每条规则：
+       - regex_replace：re.sub(compiled, repl, text)
+       - append：在文末追加固定文本
+    2. 内置收尾：多空行收敛 (≥3 个换行→2 个) + 首尾去空白
 
-    说明：只处理文字，不改图片。
+    规则在 worker 启动时一次性加载并预编译，修改 YAML 后只需重启 worker。
     """
     if not text:
         return ""
 
     t = text.replace("\r\n", "\n").replace("\r", "\n")
-    lines = t.split("\n")
-    out_lines: list[str] = []
 
-    cut_re = re.compile(r"^\s*(?:[\U0001F300-\U0001FAFF\u2600-\u27BF]\s*)?(来自|频道|群组|投稿)\s*[:：]")
+    for rule in _TRANSFORMS:
+        rtype = rule["type"]
+        if rtype == "regex_replace":
+            t = rule["compiled"].sub(rule["repl"], t)
+        elif rtype == "append":
+            # 追加前先去尾部空白，追加后保证以换行分隔
+            t = t.rstrip()
+            if t:
+                append_text = rule["text"]
+                # YAML 的 literal block (|) 会保留尾部换行，strip 一下
+                t += "\n\n" + append_text.strip()
 
-    quark_url_re = re.compile(r"https?://pan\.quark\.cn/s/[A-Za-z0-9]+", re.IGNORECASE)
+    # 内置：多空行收敛
+    t = _RE_MULTI_NEWLINE.sub("\n\n", t)
 
-    # “网盘链接行”的前缀识别：兼容“夸克：”“链接：”“网盘资源链接：”以及没有冒号但有空格的写法
-    link_prefix_re = re.compile(r"^\s*(?:夸克|链接|网盘资源链接)\s*[:：]?\s*", re.IGNORECASE)
+    # 去首尾空白
+    t = t.strip()
 
-    for line in lines:
-        if cut_re.search(line):
-            break
-
-        if quark_url_re.search(line):
-            # 1) 替换 URL
-            line = quark_url_re.sub(ZJ_BASE_URL, line)
-
-            # 2) 规范前缀为“网盘资源链接：”
-            line2 = link_prefix_re.sub("网盘资源链接：", line)
-            # 如果原本没有前缀（比如直接写 URL），也补上
-            if line2 == line:
-                line2 = f"网盘资源链接：{line}".strip()
-            line = line2
-
-            # 3) 追加说明（避免重复追加）
-            if ZJ_BASE_URL in line and ZJ_SUFFIX_NOTE and ZJ_SUFFIX_NOTE not in line:
-                line = f"{line} {ZJ_SUFFIX_NOTE}".rstrip()
-
-        out_lines.append(line)
-
-    while out_lines and out_lines[-1].strip() == "":
-        out_lines.pop()
-
-    return "\n".join(out_lines).strip()
+    return t
 
 
 # 启动 WS 在线保活（后台线程）
 _keepalive = QQWsKeepAlive()
 _keepalive.start()
 
+# ── 首次启动：等待 WS 就绪（最多等 120s，避免 WS 没 ready 就开始发消息全部失败）──
+_log("INFO", "waiting for QQ WS to be ready before processing queue...")
+if _keepalive.wait_until_ready(timeout=120):
+    _log("INFO", "QQ WS is ready, start processing queue")
+else:
+    _log("WARN", f"QQ WS not ready after 120s (err={_keepalive.last_error}), will process queue anyway")
+
 while True:
+    # ── WS 不在线时，不从队列取消息，阻塞等待 ──
+    # 这样消息安全留在 Redis 里，WS 恢复后按顺序发出，不会进死信
+    if not _keepalive.ready:
+        _log("WARN", f"QQ WS not ready, pausing queue consumption... err={_keepalive.last_error}")
+        while not _keepalive.ready:
+            _keepalive.wait_until_ready(timeout=60)
+            if not _keepalive.ready:
+                _log("WARN", f"QQ WS still not ready, keep waiting... err={_keepalive.last_error}")
+        _log("INFO", "QQ WS recovered, resuming queue consumption")
+
     _, raw = r.brpop("queue")
     task = json.loads(raw)
 
@@ -400,6 +462,15 @@ while True:
     else:
         save_dead(chat_id, msg_id, err or "send failed", task)
         _log("ERROR", f"sent failed -> dead. chat_id={chat_id} msg_id={msg_id} channel_id={qq_channel_id} err={err}")
+
+    # 清理临时媒体文件，避免 /tmp 积压
+    if task.get("media"):
+        for f in (task["media"], task["media"].replace(".jpg", "_compressed.jpg")):
+            try:
+                if os.path.exists(f):
+                    os.remove(f)
+            except Exception:
+                pass
 
     # 防风控：宁慢勿快
     time.sleep(max(SEND_INTERVAL, 0.2))

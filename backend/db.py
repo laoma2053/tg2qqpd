@@ -3,9 +3,24 @@ import json
 import psycopg2
 from psycopg2.extras import Json
 
-# 单连接足够个人使用；如未来要高并发再上连接池
-conn = psycopg2.connect(os.getenv("DATABASE_URL"))
-conn.autocommit = True
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+
+def _get_conn():
+    """获取数据库连接，断线自动重连。"""
+    global _conn
+    try:
+        # 用轻量查询检测连接是否存活
+        _conn.cursor().execute("SELECT 1")
+    except Exception:
+        _conn = psycopg2.connect(DATABASE_URL)
+        _conn.autocommit = True
+    return _conn
+
+
+# 启动时建立首个连接
+_conn = psycopg2.connect(DATABASE_URL)
+_conn.autocommit = True
 
 
 def init_db():
@@ -14,7 +29,7 @@ def init_db():
     - processed：成功转发记录（用于去重 + 今日成功统计）
     - dead：失败记录（用于死信查看 + 重放）
     """
-    with conn.cursor() as c:
+    with _get_conn().cursor() as c:
         c.execute("""
         CREATE TABLE IF NOT EXISTS processed (
             tg_chat_id BIGINT NOT NULL,
@@ -40,7 +55,7 @@ def init_db():
 
 
 def is_processed(chat_id: int, msg_id: int) -> bool:
-    with conn.cursor() as c:
+    with _get_conn().cursor() as c:
         c.execute(
             "SELECT 1 FROM processed WHERE tg_chat_id=%s AND tg_msg_id=%s",
             (chat_id, msg_id)
@@ -49,7 +64,7 @@ def is_processed(chat_id: int, msg_id: int) -> bool:
 
 
 def mark_processed(chat_id: int, msg_id: int):
-    with conn.cursor() as c:
+    with _get_conn().cursor() as c:
         c.execute(
             "INSERT INTO processed (tg_chat_id, tg_msg_id) VALUES (%s,%s) ON CONFLICT DO NOTHING",
             (chat_id, msg_id)
@@ -60,7 +75,7 @@ def save_dead(chat_id: int, msg_id: int, error: str, payload: dict):
     """
     payload 存原始任务，便于重放
     """
-    with conn.cursor() as c:
+    with _get_conn().cursor() as c:
         c.execute(
             "INSERT INTO dead (tg_chat_id, tg_msg_id, error, payload) VALUES (%s,%s,%s,%s)",
             (chat_id, msg_id, error, Json(payload))
@@ -68,7 +83,7 @@ def save_dead(chat_id: int, msg_id: int, error: str, payload: dict):
 
 
 def list_dead(limit: int = 200):
-    with conn.cursor() as c:
+    with _get_conn().cursor() as c:
         c.execute("""
             SELECT id, tg_chat_id, tg_msg_id, error, payload, created_at
             FROM dead
@@ -95,7 +110,7 @@ def get_dead_payloads_by_ids(ids: list[int]):
     if not ids:
         return []
 
-    with conn.cursor() as c:
+    with _get_conn().cursor() as c:
         c.execute("""
             SELECT id, payload FROM dead
             WHERE id = ANY(%s)
@@ -108,7 +123,7 @@ def get_dead_payloads_by_ids(ids: list[int]):
 def delete_dead_by_ids(ids: list[int]):
     if not ids:
         return
-    with conn.cursor() as c:
+    with _get_conn().cursor() as c:
         c.execute("DELETE FROM dead WHERE id = ANY(%s)", (ids,))
 
 
@@ -119,14 +134,12 @@ def stats_today():
     - failed_today：今日失败（dead）
     - dead_count：当前死信总数
     """
-    with conn.cursor() as c:
-        c.execute("SELECT COUNT(*) FROM processed WHERE created_at::date = CURRENT_DATE;")
-        success_today = int(c.fetchone()[0])
-
-        c.execute("SELECT COUNT(*) FROM dead WHERE created_at::date = CURRENT_DATE;")
-        failed_today = int(c.fetchone()[0])
-
-        c.execute("SELECT COUNT(*) FROM dead;")
-        dead_count = int(c.fetchone()[0])
-
-    return success_today, failed_today, dead_count
+    with _get_conn().cursor() as c:
+        c.execute("""
+            SELECT
+                (SELECT COUNT(*) FROM processed WHERE created_at::date = CURRENT_DATE),
+                (SELECT COUNT(*) FROM dead WHERE created_at::date = CURRENT_DATE),
+                (SELECT COUNT(*) FROM dead)
+        """)
+        row = c.fetchone()
+    return int(row[0]), int(row[1]), int(row[2])
