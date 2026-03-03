@@ -231,6 +231,13 @@ async def on_new_message(event):
     if event.message.photo:
         media = f"/tmp/{chat_id_str}_{msg_id}.jpg"
         await event.message.download_media(media)
+    elif event.message.document:
+        # 部分 TG 频道以 document 形式发送图片（大图/PNG/GIF）
+        mime = getattr(event.message.document, "mime_type", "") or ""
+        if mime.startswith("image/"):
+            ext = mime.split("/")[-1].replace("jpeg", "jpg")
+            media = f"/tmp/{chat_id_str}_{msg_id}.{ext}"
+            await event.message.download_media(media)
 
     payload = {
         "chat_id": int(event.chat_id),

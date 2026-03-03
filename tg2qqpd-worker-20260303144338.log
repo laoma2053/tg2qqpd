@@ -1,0 +1,262 @@
+[2026-03-03 13:44:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=25s
+[2026-03-03 13:45:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=2s
+[2026-03-03 13:46:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=21s
+[2026-03-03 13:47:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=40s
+[2026-03-03 13:48:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=17s
+[2026-03-03 13:49:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=36s
+[2026-03-03 13:50:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=14s
+[2026-03-03 13:51:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=32s
+[2026-03-03 13:52:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=10s
+[2026-03-03 13:53:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=29s
+[2026-03-03 13:54:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=6s
+[2026-03-03 13:55:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=25s
+[2026-03-03 13:56:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=2s
+[2026-03-03 13:57:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=21s
+[2026-03-03 13:58:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=40s
+[2026-03-03 13:59:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=17s
+[2026-03-03 14:00:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=36s
+[2026-03-03 14:01:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=14s
+[2026-03-03 14:02:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=32s
+[2026-03-03 14:03:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=10s
+[2026-03-03 14:04:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=28s
+[2026-03-03 14:05:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=6s
+[2026-03-03 14:06:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=25s
+[2026-03-03 14:07:08][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=2s
+[2026-03-03 14:07:20][INFO] worker boot: api_base=https://api.sgroup.qq.com has_target_channel=False has_target_guild=True default_send_channel_id=717979188 send_interval=2.0
+[2026-03-03 14:07:20][INFO] loaded 8 transform rules from config.yaml
+[2026-03-03 14:07:20][INFO] waiting for QQ WS to be ready before processing queue...
+[2026-03-03 14:07:20][WARN] [qq-ws] not-ready last_error=(none)
+[2026-03-03 14:07:21][INFO] [qq-ws] gateway: url=wss://api.sgroup.qq.com/websocket shards=1 limit={'total': 1500, 'remaining': 1484, 'reset_after': 57646674, 'max_concurrency': 1}
+[2026-03-03 14:07:21][INFO] [qq-ws] identify: intents=1 token=rAkIZy5-...h9Tf
+[2026-03-03 14:07:21][INFO] [qq-ws] READY! session established[2026-03-03 14:07:21][INFO] QQ WS is ready, start processing queue
+
+[2026-03-03 14:08:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=17s
+[2026-03-03 14:09:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=36s
+[2026-03-03 14:10:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=13s
+[2026-03-03 14:11:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=32s
+[2026-03-03 14:12:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=10s
+[2026-03-03 14:13:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=28s
+[2026-03-03 14:14:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=6s
+[2026-03-03 14:15:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=25s
+[2026-03-03 14:16:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=2s
+[2026-03-03 14:17:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=21s
+[2026-03-03 14:18:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=40s
+[2026-03-03 14:19:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=17s
+[2026-03-03 14:20:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=36s
+[2026-03-03 14:21:20][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=13s
+[2026-03-03 14:21:59][INFO] worker boot: api_base=https://api.sgroup.qq.com has_target_channel=False has_target_guild=True default_send_channel_id=717979188 send_interval=2.0
+[2026-03-03 14:21:59][INFO] loaded 10 transform rules from config.yaml
+[2026-03-03 14:21:59][WARN] [qq-ws] not-ready last_error=(none)[2026-03-03 14:21:59][INFO] waiting for QQ WS to be ready before processing queue...
+
+[2026-03-03 14:22:00][INFO] [qq-ws] gateway: url=wss://api.sgroup.qq.com/websocket shards=1 limit={'total': 1500, 'remaining': 1483, 'reset_after': 56767521, 'max_concurrency': 1}
+[2026-03-03 14:22:00][INFO] [qq-ws] identify: intents=1 token=5ze1_sey...ewbg
+[2026-03-03 14:22:01][INFO] [qq-ws] READY! session established
+[2026-03-03 14:22:01][INFO] QQ WS is ready, start processing queue
+[2026-03-03 14:22:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=17s
+[2026-03-03 14:23:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=35s
+[2026-03-03 14:24:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=13s
+[2026-03-03 14:25:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=32s
+[2026-03-03 14:26:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=9s
+[2026-03-03 14:27:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=28s
+[2026-03-03 14:28:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=5s
+[2026-03-03 14:29:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=24s
+[2026-03-03 14:30:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=2s
+[2026-03-03 14:31:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=20s
+[2026-03-03 14:32:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=39s
+[2026-03-03 14:33:22][INFO] sent ok. chat_id=-1001674292882 msg_id=53843 channel_id=717979188
+[2026-03-03 14:33:25][INFO] sent ok. chat_id=-1001674292882 msg_id=53844 channel_id=717979188
+[2026-03-03 14:33:28][INFO] sent ok. chat_id=-1001754812960 msg_id=7229 channel_id=717979188
+[2026-03-03 14:33:32][INFO] sent ok. chat_id=-1001934703847 msg_id=4373 channel_id=717979188
+[2026-03-03 14:33:35][INFO] sent ok. chat_id=-1001674292882 msg_id=53845 channel_id=717979188
+[2026-03-03 14:33:37][INFO] sent ok. chat_id=-1001674292882 msg_id=53846 channel_id=717979188
+[2026-03-03 14:33:40][INFO] sent ok. chat_id=-1001674292882 msg_id=53847 channel_id=717979188
+[2026-03-03 14:33:43][INFO] sent ok. chat_id=-1001674292882 msg_id=53848 channel_id=717979188
+[2026-03-03 14:33:46][INFO] sent ok. chat_id=-1001674292882 msg_id=53849 channel_id=717979188
+[2026-03-03 14:33:48][INFO] sent ok. chat_id=-1001674292882 msg_id=53850 channel_id=717979188
+[2026-03-03 14:33:51][INFO] sent ok. chat_id=-1001941021574 msg_id=14244 channel_id=717979188
+[2026-03-03 14:33:54][INFO] sent ok. chat_id=-1001941021574 msg_id=14245 channel_id=717979188
+[2026-03-03 14:33:57][INFO] sent ok. chat_id=-1001674292882 msg_id=53851 channel_id=717979188
+[2026-03-03 14:33:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=17s
+[2026-03-03 14:34:00][INFO] sent ok. chat_id=-1001674292882 msg_id=53853 channel_id=717979188
+[2026-03-03 14:34:02][INFO] sent ok. chat_id=-1001674292882 msg_id=53854 channel_id=717979188
+[2026-03-03 14:34:06][INFO] sent ok. chat_id=-1001674292882 msg_id=53855 channel_id=717979188
+[2026-03-03 14:34:09][INFO] sent ok. chat_id=-1001674292882 msg_id=53856 channel_id=717979188
+[2026-03-03 14:34:13][INFO] sent ok. chat_id=-1001674292882 msg_id=53857 channel_id=717979188
+[2026-03-03 14:34:16][INFO] sent ok. chat_id=-1001674292882 msg_id=53858 channel_id=717979188
+[2026-03-03 14:34:20][INFO] sent ok. chat_id=-1001674292882 msg_id=53859 channel_id=717979188
+[2026-03-03 14:34:22][INFO] sent ok. chat_id=-1001674292882 msg_id=53860 channel_id=717979188
+[2026-03-03 14:34:25][INFO] sent ok. chat_id=-1001674292882 msg_id=53861 channel_id=717979188
+[2026-03-03 14:34:28][INFO] sent ok. chat_id=-1001674292882 msg_id=53862 channel_id=717979188
+[2026-03-03 14:34:32][INFO] sent ok. chat_id=-1001674292882 msg_id=53863 channel_id=717979188
+[2026-03-03 14:34:35][INFO] sent ok. chat_id=-1001674292882 msg_id=53864 channel_id=717979188
+[2026-03-03 14:34:38][INFO] sent ok. chat_id=-1001674292882 msg_id=53865 channel_id=717979188
+[2026-03-03 14:34:40][INFO] sent ok. chat_id=-1001674292882 msg_id=53866 channel_id=717979188
+[2026-03-03 14:34:44][INFO] sent ok. chat_id=-1001674292882 msg_id=53867 channel_id=717979188
+[2026-03-03 14:34:48][INFO] sent ok. chat_id=-1001674292882 msg_id=53868 channel_id=717979188
+[2026-03-03 14:34:51][INFO] sent ok. chat_id=-1001674292882 msg_id=53870 channel_id=717979188
+[2026-03-03 14:34:53][INFO] sent ok. chat_id=-1001674292882 msg_id=53871 channel_id=717979188
+[2026-03-03 14:34:56][INFO] sent ok. chat_id=-1001674292882 msg_id=53872 channel_id=717979188
+[2026-03-03 14:34:59][INFO] sent ok. chat_id=-1001674292882 msg_id=53873 channel_id=717979188
+[2026-03-03 14:34:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=35s
+[2026-03-03 14:35:01][INFO] sent ok. chat_id=-1001674292882 msg_id=53874 channel_id=717979188
+[2026-03-03 14:35:04][INFO] sent ok. chat_id=-1001674292882 msg_id=53875 channel_id=717979188
+[2026-03-03 14:35:07][INFO] sent ok. chat_id=-1001674292882 msg_id=53876 channel_id=717979188
+[2026-03-03 14:35:10][INFO] sent ok. chat_id=-1001941021574 msg_id=14249 channel_id=717979188
+[2026-03-03 14:35:13][INFO] sent ok. chat_id=-1001941021574 msg_id=14250 channel_id=717979188
+[2026-03-03 14:35:16][INFO] sent ok. chat_id=-1001674292882 msg_id=53878 channel_id=717979188
+[2026-03-03 14:35:18][INFO] sent ok. chat_id=-1001754812960 msg_id=7230 channel_id=717979188
+[2026-03-03 14:35:21][INFO] sent ok. chat_id=-1001934703847 msg_id=4374 channel_id=717979188
+[2026-03-03 14:35:24][INFO] sent ok. chat_id=-1001723949888 msg_id=2713 channel_id=717979188
+[2026-03-03 14:35:27][INFO] sent ok. chat_id=-1001723949888 msg_id=2714 channel_id=717979188
+[2026-03-03 14:35:30][INFO] sent ok. chat_id=-1001941021574 msg_id=14251 channel_id=717979188
+[2026-03-03 14:35:32][INFO] sent ok. chat_id=-1001934703847 msg_id=4375 channel_id=717979188
+[2026-03-03 14:35:35][INFO] sent ok. chat_id=-1001674292882 msg_id=53877 channel_id=717979188
+[2026-03-03 14:35:38][INFO] sent ok. chat_id=-1001674292882 msg_id=53879 channel_id=717979188
+[2026-03-03 14:35:41][INFO] sent ok. chat_id=-1001674292882 msg_id=53880 channel_id=717979188
+[2026-03-03 14:35:44][INFO] sent ok. chat_id=-1001674292882 msg_id=53881 channel_id=717979188
+[2026-03-03 14:35:47][INFO] sent ok. chat_id=-1001674292882 msg_id=53882 channel_id=717979188
+[2026-03-03 14:35:50][INFO] sent ok. chat_id=-1001674292882 msg_id=53883 channel_id=717979188
+[2026-03-03 14:35:52][INFO] sent ok. chat_id=-1001674292882 msg_id=53884 channel_id=717979188
+[2026-03-03 14:35:55][INFO] sent ok. chat_id=-1001674292882 msg_id=53885 channel_id=717979188
+[2026-03-03 14:35:58][INFO] sent ok. chat_id=-1001674292882 msg_id=53887 channel_id=717979188
+[2026-03-03 14:35:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=13s
+[2026-03-03 14:36:01][INFO] sent ok. chat_id=-1001674292882 msg_id=53888 channel_id=717979188
+[2026-03-03 14:36:04][INFO] sent ok. chat_id=-1001941021574 msg_id=14252 channel_id=717979188
+[2026-03-03 14:36:06][INFO] sent ok. chat_id=-1001941021574 msg_id=14253 channel_id=717979188
+[2026-03-03 14:36:09][INFO] sent ok. chat_id=-1001934703847 msg_id=4376 channel_id=717979188
+[2026-03-03 14:36:12][INFO] sent ok. chat_id=-1001674292882 msg_id=54336 channel_id=717979188
+[2026-03-03 14:36:14][INFO] sent ok. chat_id=-1001941021574 msg_id=14254 channel_id=717979188
+[2026-03-03 14:36:18][INFO] sent ok. chat_id=-1001941021574 msg_id=14257 channel_id=717979188
+[2026-03-03 14:36:20][INFO] sent ok. chat_id=-1001941021574 msg_id=14255 channel_id=717979188
+[2026-03-03 14:36:23][INFO] sent ok. chat_id=-1001941021574 msg_id=14256 channel_id=717979188
+[2026-03-03 14:36:26][INFO] sent ok. chat_id=-1001754812960 msg_id=7231 channel_id=717979188
+[2026-03-03 14:36:29][INFO] sent ok. chat_id=-1001934703847 msg_id=4377 channel_id=717979188
+[2026-03-03 14:36:31][INFO] sent ok. chat_id=-1001723949888 msg_id=2715 channel_id=717979188
+[2026-03-03 14:36:35][INFO] sent ok. chat_id=-1001754812960 msg_id=7232 channel_id=717979188
+[2026-03-03 14:36:37][INFO] sent ok. chat_id=-1001941021574 msg_id=14258 channel_id=717979188
+[2026-03-03 14:36:40][INFO] sent ok. chat_id=-1001674292882 msg_id=53889 channel_id=717979188
+[2026-03-03 14:36:43][INFO] sent ok. chat_id=-1001674292882 msg_id=53890 channel_id=717979188
+[2026-03-03 14:36:46][INFO] sent ok. chat_id=-1001674292882 msg_id=53891 channel_id=717979188
+[2026-03-03 14:36:49][INFO] sent ok. chat_id=-1001674292882 msg_id=53892 channel_id=717979188
+[2026-03-03 14:36:52][INFO] sent ok. chat_id=-1001674292882 msg_id=53893 channel_id=717979188
+[2026-03-03 14:36:55][INFO] sent ok. chat_id=-1001674292882 msg_id=53894 channel_id=717979188
+[2026-03-03 14:36:58][INFO] sent ok. chat_id=-1001674292882 msg_id=53895 channel_id=717979188
+[2026-03-03 14:36:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=32s
+[2026-03-03 14:37:00][INFO] sent ok. chat_id=-1001674292882 msg_id=53896 channel_id=717979188
+[2026-03-03 14:37:03][INFO] sent ok. chat_id=-1001941021574 msg_id=14259 channel_id=717979188
+[2026-03-03 14:37:06][INFO] sent ok. chat_id=-1001754812960 msg_id=7233 channel_id=717979188
+[2026-03-03 14:37:09][INFO] sent ok. chat_id=-1001941021574 msg_id=14261 channel_id=717979188
+[2026-03-03 14:37:12][INFO] sent ok. chat_id=-1001941021574 msg_id=14260 channel_id=717979188
+[2026-03-03 14:37:15][INFO] sent ok. chat_id=-1001934703847 msg_id=4378 channel_id=717979188
+[2026-03-03 14:37:18][INFO] sent ok. chat_id=-1001941021574 msg_id=14262 channel_id=717979188
+[2026-03-03 14:37:21][INFO] sent ok. chat_id=-1001941021574 msg_id=14263 channel_id=717979188
+[2026-03-03 14:37:23][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=53913 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_53913.jpg'
+[2026-03-03 14:37:26][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=53979 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_53979.jpg'
+[2026-03-03 14:37:29][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=53980 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_53980.jpg'
+[2026-03-03 14:37:31][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=53981 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_53981.jpg'
+[2026-03-03 14:37:34][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54028 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54028.jpg'
+[2026-03-03 14:37:36][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14329 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14329.jpg'
+[2026-03-03 14:37:39][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14331 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14331.jpg'
+[2026-03-03 14:37:41][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7254 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7254.jpg'
+[2026-03-03 14:37:44][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7255 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7255.jpg'
+[2026-03-03 14:37:47][ERROR] sent failed -> dead. chat_id=-1001934703847 msg_id=4399 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001934703847_4399.jpg'
+[2026-03-03 14:37:50][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7256 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7256.jpg'
+[2026-03-03 14:37:52][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14334 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14334.jpg'
+[2026-03-03 14:37:54][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14333 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14333.jpg'
+[2026-03-03 14:37:57][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14332 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14332.jpg'
+[2026-03-03 14:37:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=9s
+[2026-03-03 14:38:00][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14336 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14336.jpg'
+[2026-03-03 14:38:02][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7257 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7257.jpg'
+[2026-03-03 14:38:05][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14335 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14335.jpg'
+[2026-03-03 14:38:07][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14337 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14337.jpg'
+[2026-03-03 14:38:10][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14330 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14330.jpg'
+[2026-03-03 14:38:12][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54086 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54086.jpg'
+[2026-03-03 14:38:14][ERROR] sent failed -> dead. chat_id=-1001723949888 msg_id=2730 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001723949888_2730.jpg'
+[2026-03-03 14:38:17][ERROR] sent failed -> dead. chat_id=-1001934703847 msg_id=4405 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001934703847_4405.jpg'
+[2026-03-03 14:38:19][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7264 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7264.jpg'
+[2026-03-03 14:38:22][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14358 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14358.jpg'
+[2026-03-03 14:38:24][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7265 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7265.jpg'
+[2026-03-03 14:38:27][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14359 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14359.jpg'
+[2026-03-03 14:38:30][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14360 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14360.jpg'
+[2026-03-03 14:38:33][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7266 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7266.jpg'
+[2026-03-03 14:38:36][ERROR] sent failed -> dead. chat_id=-1001934703847 msg_id=4406 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001934703847_4406.jpg'
+[2026-03-03 14:38:38][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54169 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54169.jpg'
+[2026-03-03 14:38:41][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14361 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14361.jpg'
+[2026-03-03 14:38:44][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54170 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54170.jpg'
+[2026-03-03 14:38:46][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54191 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54191.jpg'
+[2026-03-03 14:38:49][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14378 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14378.jpg'
+[2026-03-03 14:38:51][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14380 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14380.jpg'
+[2026-03-03 14:38:54][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7275 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7275.jpg'
+[2026-03-03 14:38:56][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14379 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14379.jpg'
+[2026-03-03 14:38:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=28s
+[2026-03-03 14:38:59][ERROR] sent failed -> dead. chat_id=-1001934703847 msg_id=4410 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001934703847_4410.jpg'
+[2026-03-03 14:39:02][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7276 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7276.jpg'
+[2026-03-03 14:39:04][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54223 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54223.jpg'
+[2026-03-03 14:39:07][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54224 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54224.jpg'
+[2026-03-03 14:39:09][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54225 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54225.jpg'
+[2026-03-03 14:39:12][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54227 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54227.jpg'
+[2026-03-03 14:39:15][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14387 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14387.jpg'
+[2026-03-03 14:39:18][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14388 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14388.jpg'
+[2026-03-03 14:39:20][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14389 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14389.jpg'
+[2026-03-03 14:39:23][ERROR] sent failed -> dead. chat_id=-1001934703847 msg_id=4412 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001934703847_4412.jpg'
+[2026-03-03 14:39:25][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14390 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14390.jpg'
+[2026-03-03 14:39:28][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14391 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14391.jpg'
+[2026-03-03 14:39:31][ERROR] sent failed -> dead. chat_id=-1001934703847 msg_id=4413 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001934703847_4413.jpg'
+[2026-03-03 14:39:33][ERROR] sent failed -> dead. chat_id=-1001723949888 msg_id=2737 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001723949888_2737.jpg'
+[2026-03-03 14:39:36][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14392 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14392.jpg'
+[2026-03-03 14:39:39][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14394 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14394.jpg'
+[2026-03-03 14:39:41][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7280 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7280.jpg'
+[2026-03-03 14:39:43][ERROR] sent failed -> dead. chat_id=-1001723949888 msg_id=2738 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001723949888_2738.jpg'
+[2026-03-03 14:39:46][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14393 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14393.jpg'
+[2026-03-03 14:39:48][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7279 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7279.jpg'
+[2026-03-03 14:39:51][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14396 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14396.jpg'
+[2026-03-03 14:39:53][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14395 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14395.jpg'
+[2026-03-03 14:39:55][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54286 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54286.jpg'
+[2026-03-03 14:39:58][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54287 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54287.jpg'
+[2026-03-03 14:39:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=5s
+[2026-03-03 14:40:00][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54288 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54288.jpg'
+[2026-03-03 14:40:03][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54289 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54289.jpg'
+[2026-03-03 14:40:06][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54290 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54290.jpg'
+[2026-03-03 14:40:08][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54291 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54291.jpg'
+[2026-03-03 14:40:11][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54292 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54292.jpg'
+[2026-03-03 14:40:13][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54293 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54293.jpg'
+[2026-03-03 14:40:16][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54315 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54315.jpg'
+[2026-03-03 14:40:18][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54323 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54323.jpg'
+[2026-03-03 14:40:21][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54324 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54324.jpg'
+[2026-03-03 14:40:23][ERROR] sent failed -> dead. chat_id=-1001723949888 msg_id=2740 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001723949888_2740.jpg'
+[2026-03-03 14:40:25][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14397 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14397.jpg'
+[2026-03-03 14:40:28][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54325 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54325.jpg'
+[2026-03-03 14:40:31][ERROR] sent failed -> dead. chat_id=-1001934703847 msg_id=4414 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001934703847_4414.jpg'
+[2026-03-03 14:40:33][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14398 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14398.jpg'
+[2026-03-03 14:40:36][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14399 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14399.jpg'
+[2026-03-03 14:40:39][ERROR] sent failed -> dead. chat_id=-1001723949888 msg_id=2739 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001723949888_2739.jpg'
+[2026-03-03 14:40:42][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7281 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7281.jpg'
+[2026-03-03 14:40:45][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14400 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14400.jpg'
+[2026-03-03 14:40:47][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14401 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14401.jpg'
+[2026-03-03 14:40:50][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14402 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14402.jpg'
+[2026-03-03 14:40:52][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7282 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7282.jpg'
+[2026-03-03 14:40:55][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14403 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14403.jpg'
+[2026-03-03 14:40:58][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54327 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54327.jpg'
+[2026-03-03 14:40:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=24s
+[2026-03-03 14:41:00][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14404 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14404.jpg'
+[2026-03-03 14:41:02][ERROR] sent failed -> dead. chat_id=-1001934703847 msg_id=4415 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001934703847_4415.jpg'
+[2026-03-03 14:41:05][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14405 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14405.jpg'
+[2026-03-03 14:41:08][ERROR] sent failed -> dead. chat_id=-1001754812960 msg_id=7283 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001754812960_7283.jpg'
+[2026-03-03 14:41:10][ERROR] sent failed -> dead. chat_id=-1001941021574 msg_id=14406 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001941021574_14406.jpg'
+[2026-03-03 14:41:13][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54326 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54326.jpg'
+[2026-03-03 14:41:15][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54329 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54329.jpg'
+[2026-03-03 14:41:18][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54330 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54330.jpg'
+[2026-03-03 14:41:20][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54331 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54331.jpg'
+[2026-03-03 14:41:23][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54332 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54332.jpg'
+[2026-03-03 14:41:25][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54333 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54333.jpg'
+[2026-03-03 14:41:28][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54334 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54334.jpg'
+[2026-03-03 14:41:30][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54335 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54335.jpg'
+[2026-03-03 14:41:33][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54337 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54337.jpg'
+[2026-03-03 14:41:35][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54338 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54338.jpg'
+[2026-03-03 14:41:38][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54339 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54339.jpg'
+[2026-03-03 14:41:40][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54340 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54340.jpg'
+[2026-03-03 14:41:43][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54341 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54341.jpg'
+[2026-03-03 14:41:46][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54342 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54342.jpg'
+[2026-03-03 14:41:48][ERROR] sent failed -> dead. chat_id=-1001674292882 msg_id=54384 channel_id=717979188 err=[Errno 2] No such file or directory: '/tmp/-1001674292882_54384.jpg'
+[2026-03-03 14:41:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=2s
+[2026-03-03 14:42:59][INFO] [qq-ws] ready url=wss://api.sgroup.qq.com/websocket seq=1 heartbeat_interval=41.2s last_hb_age=20s

@@ -1,184 +1,321 @@
 # TG2QQPD
 
-一个个人使用的 **Telegram → QQ 频道** 自动转发服务，支持 **文字 + 图片（图文）**，并提供最小化的管理 API（登录、指标、死信查看/重放）。
+**Telegram → QQ 频道** 自动转发服务。监听指定 Telegram 频道的新消息，经过过滤与文案清洗后，以**帖子**形式发布到 QQ 频道子频道。
 
-> 运行形态：Docker Compose（PostgreSQL + Redis + backend + worker）
+> 运行形态：Docker Compose（PostgreSQL + Redis + backend + worker）  
+> 最后更新：2026-03-03
 
 ---
 
 ## 功能特性
 
-- **TG → QQ 转发**：监听指定 Telegram 频道的新消息，转发到指定 QQ 频道子频道
-- **图文支持（真实图片上传）**：使用 QQ 频道接口 `multipart/form-data` 上传 `file_image` 实现真正的图片发送
-- **多图/相册策略**：只转发第一张图 + 文案（当前按 Telethon 行为做“首图/单图”简化策略）
-- **失败降级策略**：
-  - 图片发送失败 → 压缩后重试一次
-  - 仍失败 → 降级只发文字
-- **关键词/正则过滤（只看文字）**：支持 `block/allow` 两种模式
-- **去重**：PostgreSQL `processed` 记录已成功转发的 `(tg_chat_id, tg_msg_id)`，避免重复
-- **死信队列**：失败写入 `dead(payload JSONB)`，支持查看与重放
-- **运维指标（Dashboard API）**：队列长度、今日成功/失败、死信总量
+- **TG → QQ 帖子转发**：监听多个 Telegram 频道，自动转发到 QQ 频道的帖子子频道（type=10007）
+- **帖子 API 发送**：使用 `PUT /channels/{channel_id}/threads` 发帖，支持纯文本（format=1）和 HTML 图文（format=2）
+- **图文支持**：图片先上传至 QQ CDN 获取内部 URL，再以 HTML `<img>` 嵌入帖子
+- **多层降级策略**：
+  1. 图文帖子发送失败 → 压缩图片重试
+  2. 压缩仍失败 → 降级为纯文本帖子
+  3. 图片文件丢失（容器重启后 `/tmp` 清空）→ 自动降级纯文本
+- **YAML 驱动的文案清洗**：正则替换 + 追加模板，规则在 `config.yaml` 中配置，改完重启即生效
+- **URL 自动删除**：QQ 频道禁止外部 URL，所有 `https://...` 链接在发送前自动清除
+- **关键词/正则过滤**：支持黑名单（block）+ 白名单（allow）两种模式
+- **去重**：PostgreSQL `processed` 表记录已转发的 `(tg_chat_id, tg_msg_id)`
+- **死信队列**：发送失败写入 `dead` 表，支持查看与批量重放
+- **静默时段**：QQ 频道 00:00~06:00 禁止机器人发主动消息，Worker 自动暂停，消息安全留在 Redis
+- **限流保护**：检测到 QQ 发送频率限制（304045）时自动回退队列 + 等待恢复
+- **WS 保活 + 熔断**：QQ 网关 WebSocket 在线保活，连续失败 5 次触发熔断（休眠 30 分钟），自动恢复
+- **管理 API**：登录鉴权、运维指标、死信管理、频道调试接口
 
 ---
 
 ## 架构概览
 
 ```
-Telegram (Telethon)
-  -> backend (监听 + 规则判定 + 入 Redis 队列)
-  -> Redis list queue
-  -> worker (出队 + WS 保活 + 发送 QQ 图文 + 写 DB + 死信)
-  -> QQ Channel
+Telegram (Telethon userbot)
+  │
+  ▼
+backend (app.py)
+  ├─ 监听 5 个 TG 频道
+  ├─ 关键词/正则过滤
+  ├─ 入 Redis 队列
+  │
+  ▼
+Redis list "queue"
+  │
+  ▼
+worker (worker.py)
+  ├─ 出队 → 文案清洗（YAML 规则引擎）
+  ├─ 静默时段 / WS 未就绪 → 暂停消费
+  ├─ PUT /channels/{id}/threads 发帖
+  ├─ 成功 → 写 processed 去重表
+  └─ 失败 → 写 dead 死信表 / 限流回退队列
 
-PostgreSQL: processed（去重/成功记录） + dead（死信，含 payload）
+QQ 频道 "网盘追剧吧" (帖子子频道 type=10007)
+
+PostgreSQL: processed（去重）+ dead（死信）
 ```
 
 ---
 
 ## 目录结构
 
-- `backend/`
-  - `app.py`：Telethon 监听 + FastAPI 管理 API
-  - `worker.py`：消费 Redis 队列，发送 QQ（图文）、压缩重试、降级、写库
-  - `db.py`：PostgreSQL（processed/dead）
-  - `auth.py`：JWT 登录鉴权
-  - `qq_auth.py`：QQ AccessToken 自动刷新缓存器
-  - `qq_ws_keepalive.py`：QQ 网关 WebSocket 在线保活（满足频道发消息“在线”前置条件）
-  - `api/`
-    - `system.py`：`GET /api/system/stats`
-    - `deadletters.py`：死信列表与重放
-- `docker-compose.yml`：一键部署
-- `.env`：环境变量配置
-- `mapping.json`：频道映射配置（白名单监听）
-- `blacklist.json`：黑名单（优先级最高）
-
----
-
-## 环境变量（.env）
-
-> 下列为关键项，完整示例请参考仓库根目录的 `.env`。
-
-### Telegram
-
-- `TG_API_ID`：Telegram API ID
-- `TG_API_HASH`：Telegram API HASH
-- `TG_SESSION`：Session 名称（会持久化到 Docker volume）
-
-### QQ（推荐使用 AccessToken 自动刷新）
-
-- `QQ_APP_ID`
-- `QQ_APP_SECRET`：用于自动刷新 access_token（必须）
-- `QQ_API_BASE`：默认 `https://api.sgroup.qq.com`
-- `QQ_WS_INTENTS`：WS intents，默认最小 `1`（仅保活）
-
-> 兼容：你也可以手动填写 `QQ_ACCESS_TOKEN`，此时程序会优先使用它（不自动刷新）。
-
-### 数据库/队列
-
-- `REDIS_HOST=redis`
-- `DATABASE_URL=postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq`
-
-### 后台鉴权（公开部署务必设置强密码）
-
-- `JWT_SECRET`
-- `ADMIN_PASS`
-
-### 文案清洗（发送到 QQ 前）
-
-- `ZJ_BASE_URL`：默认 `www.zhuiju.us`
-- `ZJ_SUFFIX_NOTE`：默认 `访问搜影片名或进QQ群搜索`
-
----
-
-## 映射配置（mapping.json）
-
-**强烈建议使用 `tg_chat_id`（例如 `-100xxxx`）作为主键**，不要用 `@username`。
-
-示例：
-
-```json
-{
-  "-1001234567890": {
-    "enabled": true,
-    "qq_channel_id": "1234567890123456789",
-    "remark": "示例频道",
-    "gray_ratio": 1,
-    "template": {"prefix": "", "suffix": ""},
-    "filter": {"mode": "block", "keywords": [], "regex": []}
-  }
-}
+```
+tg2qqpd/
+├── config.yaml              # 统一业务配置（TG 源、QQ 目标、过滤规则、清洗规则等）
+├── .env                     # 敏感凭证（API Key/Secret/Token，不入 Git）
+├── docker-compose.yml       # 一键部署 4 个服务
+├── backend/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── app.py               # TG 监听 + FastAPI 管理 API
+│   ├── worker.py             # 消费队列 → 文案清洗 → 发帖到 QQ
+│   ├── config.py             # YAML 配置加载器（支持 ${ENV_VAR} 语法）
+│   ├── db.py                 # PostgreSQL（processed / dead）
+│   ├── auth.py               # JWT 登录鉴权
+│   ├── qq_auth.py            # QQ AccessToken 自动刷新
+│   ├── qq_ws_keepalive.py    # QQ 网关 WS 保活（熔断 + 配额保护）
+│   └── api/
+│       ├── system.py         # GET /api/system/stats
+│       ├── deadletters.py    # 死信列表 / 重放
+│       └── qq_debug.py       # QQ 频道调试（列频道、选子频道）
+├── data/
+│   ├── postgres/             # PostgreSQL 数据持久化
+│   ├── tg_session/           # Telegram 登录态
+│   └── tg_media/             # TG 媒体文件（共享给 worker）
+├── docs/
+│   ├── setup-guide.md        # 部署指南
+│   ├── qq-channel-info.md    # QQ 频道/子频道信息与查询命令
+│   └── jiaojie.md
+├── logs/
+└── nginx/
+    └── nginx.conf
 ```
 
-说明：
-- `gray_ratio` 支持两种写法：
-  - `0~1`（推荐，概率）
-  - `0~100`（百分比，兼容旧写法）
+---
+
+## 配置说明
+
+### 敏感凭证（`.env`）
+
+> 不入 Git，仅在部署服务器上维护。
+
+```env
+# Telegram
+TG_API_ID=12345678
+TG_API_HASH=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# QQ 频道 Bot
+QQ_APP_ID=102835488
+QQ_APP_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+QQ_BOT_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 后台管理
+JWT_SECRET=your-jwt-secret
+ADMIN_PASS=your-admin-password
+
+# 基础设施（Docker 内部网络，一般不需要改）
+REDIS_HOST=redis
+DATABASE_URL=postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq
+```
+
+### 业务配置（`config.yaml`）
+
+所有业务逻辑配置集中在 `config.yaml`，通过 `${ENV_VAR}` 语法引用 `.env` 中的敏感值。
+
+主要配置块：
+
+| 配置块 | 说明 |
+|---|---|
+| `telegram.sources` | 监听的 TG 频道列表（@username / 数值 ID） |
+| `qq.target_guild_id` | 目标 QQ 频道 guild_id |
+| `qq.target_channel_id` | 目标帖子子频道 channel_id（留空自动选择） |
+| `qq.send_interval` | 发送间隔（秒），防风控，当前设为 2 |
+| `qq.quiet_hours_start/end` | 静默时段（默认 0~6 点） |
+| `rules.filter` | 黑名单/白名单过滤规则 |
+| `rules.transforms` | 文案清洗规则（正则替换 + 追加模板） |
+| `forward.enabled` | 转发总开关 |
+| `forward.gray_ratio` | 灰度比例 0~1 |
+
+详细配置项和注释见 [`config.yaml`](config.yaml)。
 
 ---
 
-## 管理 API（公开部署默认需 JWT）
+## 文案清洗规则
 
-当前后端对外暴露 `8000`，并做了最小加固：
+发送到 QQ 前，文本经过 `config.yaml → rules.transforms` 中定义的规则链依次处理：
 
-- `POST /api/login`：免鉴权，获取 token
-- 其他 `/api/*`：都需要 `Authorization: Bearer <token>`
+| # | 类型 | 作用 |
+|---|---|---|
+| 1 | regex_replace | `名称：` 前缀替换为 `🎬已更新：` |
+| 2 | regex_replace | 删除 `🗂 信息` 块（体积/标签等） |
+| 3 | regex_replace | 删除投稿人/频道/群组等尾部导流 |
+| 4 | regex_replace | 删除 `链接：https://... + 📁 大小 + 🏷 标签` 块 |
+| 5 | regex_replace | 删除 `阿里/夸克/百度：https://...` 尾部信息 |
+| 6 | regex_replace | 删除原文 `📤 资源链接：...` 提示行 |
+| 7 | regex_replace | 删除夸克网盘链接 |
+| 8 | regex_replace | 删除阿里云盘链接 |
+| 9 | regex_replace | 删除所有剩余 `https://...` 链接（QQ 禁止外部 URL） |
+| 10 | append | 追加引导文案（QQ 群号 + 搜索关键词） |
 
-### 登录
-
-- `POST /api/login`
-- body: `{ "password": "<ADMIN_PASS>" }`
-- resp: `{ "token": "<jwt>" }`
-
-### 指标
-
-- `GET /api/system/stats`
-
-### 死信
-
-- `GET /api/deadletters`
-- `POST /api/deadletters/{id}/retry`
-- `POST /api/deadletters/retry`（body: `{ "ids": [1,2,3] }`）
+内置收尾处理：多空行收敛（≥3 换行→2）+ 首尾去空白。
 
 ---
 
-## 部署（Docker Compose）
+## Worker 保护机制
+
+Worker（`worker.py`）内置多层保护，确保消息不丢失：
+
+| 保护 | 触发条件 | 行为 |
+|---|---|---|
+| **静默时段** | 00:00~06:00（可配置） | 暂停消费队列，消息留在 Redis |
+| **WS 未就绪** | QQ WebSocket 未连接/未 READY | 暂停消费，等待 WS 恢复 |
+| **限流回退** | QQ 返回 304045 (reach limit) | 消息推回队列头部，等待 5 分钟 |
+| **鉴权重试** | QQ 返回 401/403 | 刷新 token + 等待 WS → 重试一次 |
+| **图片降级** | 图片发送失败 / 文件丢失 | 压缩重试 → 降级纯文本帖子 |
+| **死信兜底** | 所有重试都失败 | 写入 dead 表，支持后续手动重放 |
+
+### WS 保活熔断（`qq_ws_keepalive.py`）
+
+| 参数 | 值 | 说明 |
+|---|---|---|
+| 连续失败阈值 | 5 次 | 超过后触发熔断 |
+| 熔断休眠时间 | 30 分钟 | 避免耗尽连接配额（1500/天） |
+| 低配额警告 | remaining < 20 | 日志打印警告 |
+| 配额耗尽保护 | remaining = 0 | 等待 reset_after 后再连接 |
+
+---
+
+## 管理 API
+
+后端暴露 `8000` 端口，所有 `/api/*` 接口（除登录外）需要 JWT 鉴权。
+
+### 鉴权
+
+```bash
+# 获取 Token
+TOKEN=$(curl -s -X POST http://<IP>:8000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"password":"<ADMIN_PASS>"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+```
+
+### 接口列表
+
+| 方法 | 路径 | 说明 | 鉴权 |
+|---|---|---|---|
+| GET | `/healthz` | 健康检查 | ❌ |
+| POST | `/api/login` | 获取 JWT | ❌ |
+| GET | `/api/system/stats` | 运维指标（队列长度、成功/失败数、死信总量） | ✅ |
+| GET | `/api/deadletters` | 死信列表 | ✅ |
+| POST | `/api/deadletters/{id}/retry` | 重放单条死信 | ✅ |
+| POST | `/api/deadletters/retry` | 批量重放（body: `{"ids":[1,2,3]}`） | ✅ |
+| GET | `/api/qq/guilds` | 列出 Bot 加入的所有 QQ 频道 | ✅ |
+| GET | `/api/qq/channels?guild_id=...` | 列出指定频道下所有子频道 | ✅ |
+| GET | `/api/qq/pick-default-channel?guild_id=...` | 自动选择可发言子频道 | ✅ |
+
+---
+
+## 部署
+
+### 前置条件
+
+- Docker + Docker Compose v2
+- Telegram 账号 + API credentials（[my.telegram.org](https://my.telegram.org)）
+- QQ 频道私域机器人（[QQ 开放平台](https://bot.q.qq.com)）
 
 ### 1) 准备配置
 
-1. 填写 `.env`（Telegram + QQ + 鉴权）
-2. 填写 `mapping.json`（至少一个 tg_chat_id → qq_channel_id）
-3. `blacklist.json` 可保持 `[]`
+```bash
+# 填写敏感凭证
+cp .env.example .env
+vim .env
+
+# 编辑业务配置（TG 源、QQ 目标、过滤规则等）
+vim config.yaml
+```
 
 ### 2) 启动
 
-在项目根目录执行：
-
-- `docker compose up -d --build`
+```bash
+docker compose up -d --build
+```
 
 ### 3) Telegram 首次登录
 
-首次启动 `backend` 需要在日志/控制台完成 Telethon 登录（验证码/二步验证）。
-登录态会保存到 `tg_session` volume，后续重启无需重复登录。
+首次启动 backend 需要在终端完成 Telethon 交互式登录（验证码/二步验证）：
+
+```bash
+docker compose run --rm backend python -c "
+from telethon.sync import TelegramClient
+c = TelegramClient('/app/sessions/userbot', API_ID, API_HASH)
+c.start()
+c.disconnect()
+"
+```
+
+登录态保存在 `data/tg_session/`，后续重启无需重复登录。
+
+### 4) 常用运维命令
+
+```bash
+# 查看所有服务状态
+docker compose ps
+
+# 查看日志（实时跟踪）
+docker compose logs -f --tail=200
+
+# 只看 worker 日志
+docker compose logs -f worker
+
+# 重启（修改 config.yaml 后）
+docker compose restart backend worker
+
+# 重建（修改代码/Dockerfile 后）
+docker compose up -d --build
+```
 
 ---
 
-## 文案清洗规则（当前版本）
+## QQ 频道子频道类型说明
 
-发送到 QQ 前会对文本做最小清洗：
+> ⚠️ QQ 频道目前已**不支持创建 type=0 的纯文字子频道**，所有新建子频道默认为 **type=10007（帖子频道）**。
 
-- 遇到 `来自/频道/群组/投稿` 行（可含图标前缀）则**截断并删除该行及后续内容**
-- 仅在“网盘链接行”（包含 `https://pan.quark.cn/s/...`）做替换：
-  - URL 替换为 `ZJ_BASE_URL`
-  - 行前缀统一为 `网盘资源链接：`
-  - 行末追加 `ZJ_SUFFIX_NOTE`
+| type | 含义 | 可发消息 | 使用的 API |
+|---|---|---|---|
+| 0 | 文字子频道（旧版，已无法新建） | ✅ | `POST /channels/{id}/messages` |
+| 4 | 分类 | ❌ | — |
+| 10007 | 帖子子频道 | ✅ | `PUT /channels/{id}/threads` |
+| 10011 | 日程子频道 | — | — |
+
+本项目使用 **帖子 API** (`PUT /channels/{channel_id}/threads`) 发送消息。
+
+更多子频道详情见 [`docs/qq-channel-info.md`](docs/qq-channel-info.md)。
 
 ---
 
-## 注意事项
+## QQ 频道已知限制
 
-- QQ 文档提示：频道发消息要求机器人保持 WebSocket 在线。本项目已实现最小 WS 保活。
-- WebSocket 链路在官方文档中存在“逐步下线”的提示；如未来不可用，需要迁移 webhook 模式。
-- 建议云服务器上不要公开暴露 Postgres/Redis 端口。
+| 限制 | 错误码 | 说明 |
+|---|---|---|
+| 外部 URL 禁止 | 304003 | 消息内容不能包含外部链接，需在发送前删除 |
+| 夜间禁发 | 304022 | 00:00~06:00 禁止主动消息 |
+| 发送频率限制 | 304045 | 达到消息发送数量上限，需等待重置 |
+| WS 连接配额 | — | 每日 1500 次，快速重连会耗尽 |
+
+---
+
+## 技术栈
+
+| 组件 | 技术 |
+|---|---|
+| TG 监听 | Python 3.11 + Telethon (userbot) |
+| Web API | FastAPI + Uvicorn |
+| 消息队列 | Redis 7 (list) |
+| 数据库 | PostgreSQL 15 |
+| QQ 发送 | requests (帖子 API) |
+| QQ 保活 | websocket-client (WS Gateway) |
+| 图片处理 | Pillow |
+| 部署 | Docker Compose v2 |
+| 时区 | Asia/Shanghai (所有容器) |
 
 ---
 

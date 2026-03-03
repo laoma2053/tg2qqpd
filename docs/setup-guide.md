@@ -1,150 +1,331 @@
 # TG2QQPD 配置获取与填写指南（Setup Guide）
 
-本指南用于解决两个问题：
+> 最后更新：2026-03-03
 
-1. 本项目需要你准备哪些“值”（主要是 `.env`）
-2. 这些值分别如何获取、如何验证是否正确
+本指南帮你解决：
 
-> 重要结论（已更新为“纯 ENV 模式”）
-> - **不再需要 `mapping.json`**（也不再需要你提前知道 `tg_chat_id=-100...`）。
-> - 你只需要在 `.env` 里填写：
->   - 监听哪些 TG 频道（`TG_SOURCES=@a,@b,@c`）
->   - 统一发送到哪个 QQ 子频道（`QQ_TARGET_CHANNEL_ID=...`）
-> - QQ 频道发消息仍然是发到 **某一个“文字子频道 channel_id”**，不能只给 `guild_id`。
+1. 本项目需要准备哪些凭证和配置
+2. 这些值分别如何获取
+3. 如何验证配置是否正确
 
 ---
 
-## 1) 本项目需要你准备哪些“值”（总览）
+## 配置架构
+
+本项目采用 **双层配置** 模式：
+
+| 文件 | 内容 | 是否入 Git |
+|---|---|---|
+| `.env` | 敏感凭证（API Key / Secret / Token / 密码） | ❌ 不入 |
+| `config.yaml` | 所有业务配置（TG 源、QQ 目标、过滤规则、清洗规则等） | ✅ 入 |
+
+`config.yaml` 通过 `${ENV_VAR}` 语法引用 `.env` 中的敏感值，实现凭证与业务逻辑分离。
+
+---
+
+## 1) 需要准备的凭证总览
 
 ### A. Telegram（写入 `.env`）
 
-| 变量 | 必填 | 作用 | 获取方式概览 |
-|---|---:|---|---|
-| `TG_API_ID` | 是 | Telethon 登录所需 | 从 https://my.telegram.org 获取 |
-| `TG_API_HASH` | 是 | Telethon 登录所需 | 从 https://my.telegram.org 获取 |
-| `TG_SESSION` | 否 | session 文件名/登录态标识 | 随便填（建议固定别改） |
-| `TG_SOURCES` | 是 | 监听的 TG 频道列表（username） | 直接填 `@用户名`，逗号分隔 |
+| 变量 | 必填 | 作用 | 获取方式 |
+|---|:---:|---|---|
+| `TG_API_ID` | ✅ | Telethon 登录 | [my.telegram.org](https://my.telegram.org) |
+| `TG_API_HASH` | ✅ | Telethon 登录 | [my.telegram.org](https://my.telegram.org) |
 
-### B. QQ 机器人（写入 `.env`，推荐 AccessToken 自动刷新）
+> TG 监听源（频道列表）已移至 `config.yaml → telegram.sources`，不再写在 `.env` 里。
 
-| 变量 | 必填 | 作用 | 获取方式概览 |
-|---|---:|---|---|
-| `QQ_APP_ID` | 是 | QQ 机器人应用 ID | QQ 机器人开放平台后台 |
-| `QQ_APP_SECRET` | 是 | 自动换取/刷新 access_token | QQ 机器人开放平台后台（clientSecret/AppSecret） |
-| `QQ_ACCESS_TOKEN` | 否 | 手动 token（不自动刷新） | 不推荐长期使用 |
-| `QQ_API_BASE` | 否 | OpenAPI base | 默认 `https://api.sgroup.qq.com` |
-| `QQ_WS_INTENTS` | 否 | WS 订阅 intents（保活用） | 默认 `1`（最小 GUILDS） |
-| `QQ_TARGET_CHANNEL_ID` | 是 | 统一发送到的 QQ“文字子频道 channel_id” | 见下文获取方式 |
+### B. QQ 频道 Bot（写入 `.env`）
 
-> 本项目已经实现：
-> - 自动获取/刷新 access_token（`QQ_APP_ID + QQ_APP_SECRET`）
-> - 最小 WebSocket 在线保活（满足“频道发消息需要 WS 在线”的文档前置条件）
+| 变量 | 必填 | 作用 | 获取方式 |
+|---|:---:|---|---|
+| `QQ_APP_ID` | ✅ | 机器人应用 ID | [QQ 开放平台](https://bot.q.qq.com) |
+| `QQ_APP_SECRET` | ✅ | 自动刷新 access_token | QQ 开放平台后台（clientSecret） |
+| `QQ_BOT_TOKEN` | ✅ | Bot Token | QQ 开放平台后台 |
 
-### C. Redis / PostgreSQL（写入 `.env`）
+> QQ 目标频道/子频道 ID 已移至 `config.yaml → qq.target_guild_id / target_channel_id`。
+>
+> access_token 由程序自动获取和刷新，**无需手动填写**。
+
+### C. 后台管理鉴权（写入 `.env`）
 
 | 变量 | 必填 | 作用 | 说明 |
-|---|---:|---|---|
-| `REDIS_HOST` | 是 | 队列 | Docker Compose 内固定写 `redis` |
-| `DATABASE_URL` | 是 | PostgreSQL | Docker Compose 内固定写 `postgres` |
+|---|:---:|---|---|
+| `JWT_SECRET` | ✅ | JWT 签名密钥 | 长随机字符串，公开部署务必设强值 |
+| `ADMIN_PASS` | ✅ | 管理后台登录密码 | 公开部署务必设强密码 |
 
-### D. 管理 API 鉴权（写入 `.env`）
+### D. 基础设施（写入 `.env`，一般不需要改）
 
-| 变量 | 必填 | 作用 | 说明 |
-|---|---:|---|---|
-| `JWT_SECRET` | 是（公开部署强烈建议） | JWT 校验密钥 | 需要长随机字符串 |
-| `ADMIN_PASS` | 是（公开部署强烈建议） | 登录密码 | 建议强密码 |
-
-> 公开部署时：只有 `POST /api/login` 免鉴权，其余 `/api/*` 默认都需要 Bearer token。
+| 变量 | 必填 | 默认值 | 说明 |
+|---|:---:|---|---|
+| `REDIS_HOST` | ✅ | `redis` | Docker Compose 内部服务名 |
+| `DATABASE_URL` | ✅ | `postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq` | Docker Compose 内部连接 |
 
 ---
 
-## 2) Telegram：如何填写与验证
+## 2) Telegram 凭证获取
 
 ### 2.1 获取 `TG_API_ID` / `TG_API_HASH`
 
-1. 打开 https://my.telegram.org
-2. 登录你的 Telegram 账号
+1. 打开 [my.telegram.org](https://my.telegram.org)
+2. 用你的 Telegram 账号登录
 3. 进入 **API development tools**
-4. 创建应用后可看到：
-   - **App api_id** → `TG_API_ID`
-   - **App api_hash** → `TG_API_HASH`
+4. 创建应用（App title / Short name 随便填）
+5. 获取：
+   - **App api_id** → 写入 `.env` 的 `TG_API_ID`
+   - **App api_hash** → 写入 `.env` 的 `TG_API_HASH`
 
-### 2.2 选择 `TG_SESSION`
+### 2.2 配置监听源（`config.yaml`）
 
-- 随便写，例如 `userbot`
-- 不要频繁改。改了会导致 Telethon 当作新会话，可能需要重新登录。
+在 `config.yaml → telegram.sources` 中填写要监听的 TG 频道：
 
-### 2.3 填写 `TG_SOURCES`（监听多个频道）
+```yaml
+telegram:
+  api_id: ${TG_API_ID}
+  api_hash: ${TG_API_HASH}
+  session: userbot
+  session_dir: /app/sessions
 
-- 格式：多个 TG 频道 username，逗号分隔
-- 示例：
-
-```properties
-TG_SOURCES=@Remux4KFilm,@Q_dianshiju,@Q_dongman,@Q_dianying
+  sources:
+    - "@Q_dianshiju"      # 支持 @username 格式
+    - "@Q_dongman"
+    - "@Q_dianying"
+    - "@Q_jilupian"
+    - "@Aliyun_4K_Movies"
 ```
 
-说明：
-- 必须是你账号“能看到/已加入”的频道（至少要能访问）
-- 支持写不带 `@` 的形式，但推荐统一带 `@`
+> 说明：
+> - 必须是你的 Telegram 账号**已加入或可访问**的频道
+> - 支持 `@username`、`t.me/xxx` 链接、数值 ID 三种格式
+> - Session 名称建议固定为 `userbot`，不要频繁修改
+
+### 2.3 首次 Telethon 登录
+
+首次启动需要在终端完成交互式登录（输入验证码/二步验证密码）：
+
+```bash
+docker compose run --rm backend python -c "
+from telethon.sync import TelegramClient
+import os
+c = TelegramClient('/app/sessions/userbot', int(os.environ['TG_API_ID']), os.environ['TG_API_HASH'])
+c.start()
+c.disconnect()
+"
+```
+
+登录态保存在 `data/tg_session/` 目录，后续重启**无需重复登录**。
 
 ---
 
-## 3) QQ：如何获取 `QQ_TARGET_CHANNEL_ID`
+## 3) QQ 频道 Bot 凭证获取
 
-本项目发送频道消息用的是：
+### 3.1 创建机器人
 
-- `POST https://api.sgroup.qq.com/channels/{channel_id}/messages`
+1. 打开 [QQ 开放平台](https://bot.q.qq.com)
+2. 创建一个**私域机器人**（目前帖子 API 仅私域可用）
+3. 在应用详情页获取：
+   - **AppID** → `QQ_APP_ID`
+   - **AppSecret (clientSecret)** → `QQ_APP_SECRET`
+   - **Bot Token** → `QQ_BOT_TOKEN`
 
-因此 `.env` 里的 `QQ_TARGET_CHANNEL_ID` 必须是 **文字子频道** 的 `channel_id`。
+> ⚠️ 私域机器人创建后需要**先将机器人从频道移除，再重新添加**，帖子 API 才会生效。
 
-> 你提到的 `guild_id` 是“大频道/频道服务器”的 ID：它不是发送消息的落点。
+### 3.2 获取目标频道 guild_id 和子频道 channel_id
 
-### 3.1 推荐获取方式
+本项目发消息使用的是 **帖子 API**：
 
-**方式 A：从 QQ 客户端/管理端复制子频道链接**
-- 对目标“文字子频道”复制链接/分享链接
-- 若链接里包含 `/channels/123...`，那串数字通常就是 `channel_id`
+```
+PUT https://api.sgroup.qq.com/channels/{channel_id}/threads
+```
 
-**方式 B：通过 OpenAPI 列出子频道（最稳）**
-- 后续可添加一个脚本/API：给定 `guild_id`，列出该频道下所有子频道（name + channel_id + type）
-- 从输出里挑目标子频道的 `channel_id`
+你需要知道目标**帖子子频道**的 `channel_id`。
+
+#### 方式 A：通过管理 API 查询（推荐）
+
+部署启动后，通过内置的调试接口查询：
+
+```bash
+# 1. 获取管理 Token
+TOKEN=$(curl -s -X POST http://localhost:8000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"password":"你的ADMIN_PASS"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+
+# 2. 查看 Bot 加入的所有频道（获取 guild_id）
+curl -s http://localhost:8000/api/qq/guilds \
+  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
+
+# 3. 查看频道下所有子频道（获取 channel_id）
+curl -s "http://localhost:8000/api/qq/channels?guild_id=你的guild_id" \
+  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
+
+# 4. 或者让系统自动选择可发言子频道
+curl -s "http://localhost:8000/api/qq/pick-default-channel?guild_id=你的guild_id" \
+  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
+```
+
+#### 方式 B：直接调用 QQ OpenAPI
+
+```bash
+# 获取 access_token
+ACCESS_TOKEN=$(curl -s -X POST https://bots.qq.com/app/getAppAccessToken \
+  -H 'Content-Type: application/json' \
+  -d '{"appId":"你的APP_ID","clientSecret":"你的APP_SECRET"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+
+# 列出所有子频道
+curl -s "https://api.sgroup.qq.com/guilds/你的guild_id/channels" \
+  -H "Authorization: QQBot $ACCESS_TOKEN" \
+  | python3 -c "
+import sys,json
+channels = json.load(sys.stdin)
+for ch in channels:
+    print(f\"id={ch.get('id')}  name={ch.get('name')}  type={ch.get('type')}  speak={ch.get('speak_permission')}\")
+"
+```
+
+> 输出中 **type=10007** 的是帖子子频道，选择你想要发帖的那个，记下 `id`。
+
+### 3.3 配置目标频道（`config.yaml`）
+
+```yaml
+qq:
+  app_id: ${QQ_APP_ID}
+  app_secret: ${QQ_APP_SECRET}
+  bot_token: ${QQ_BOT_TOKEN}
+
+  target_guild_id: "3628508121088643592"    # 频道服务器 ID
+  target_channel_id: "717979188"            # 帖子子频道 ID（留空则自动选择）
+
+  send_interval: 2          # 发送间隔（秒），防风控
+  quiet_hours_start: 0      # 静默时段开始（0 点）
+  quiet_hours_end: 6        # 静默时段结束（6 点）
+```
+
+> **关于 `target_channel_id`**：
+> - 填写具体 channel_id → 固定发到该子频道
+> - 留空 `""` → 自动选择 guild 下第一个可发言的帖子子频道
 
 ---
 
-## 4) `.env` 最小可运行范本（核心项）
+## 4) `.env` 完整范本
 
 ```properties
+# === Telegram ===
 TG_API_ID=12345678
 TG_API_HASH=abcdef1234567890abcdef1234567890
-TG_SESSION=userbot
 
-TG_SOURCES=@Remux4KFilm,@Q_dianshiju,@Q_dongman,@Q_dianying
-
+# === QQ 频道 Bot ===
 QQ_APP_ID=102835488
-QQ_APP_SECRET=xxxxx
-QQ_TARGET_CHANNEL_ID=1234567890123456789
+QQ_APP_SECRET=your_app_secret_here
+QQ_BOT_TOKEN=your_bot_token_here
 
-REDIS_HOST=redis
-DATABASE_URL=postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq
-
+# === 后台管理 ===
 JWT_SECRET=change_me_to_a_long_random_string
 ADMIN_PASS=change_me_to_a_strong_password
+
+# === 基础设施（Docker Compose 内部，一般不改）===
+REDIS_HOST=redis
+DATABASE_URL=postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq
 ```
 
 ---
 
-## 5) 常见坑（务必看）
+## 5) QQ 频道子频道类型说明
 
-1. **必须填 `QQ_TARGET_CHANNEL_ID`（子频道），不能只填 `guild_id`**
-   - 发消息的接口是 `/channels/{channel_id}/messages`
+> ⚠️ QQ 频道目前已**不支持新建 type=0 的纯文字子频道**，所有新建子频道默认为帖子类型。
 
-2. **首次 Telethon 登录需要交互**
-   - 首次启动会要求输入验证码（或二步验证密码）
-   - 登录态写入 Docker volume 之后就稳定了
+| type 值 | 含义 | 可发消息 | API |
+|---|---|---|---|
+| 0 | 文字子频道（旧版，已无法新建） | ✅ | `POST /channels/{id}/messages` |
+| 4 | 分类（不可发消息） | ❌ | — |
+| 10007 | **帖子子频道** | ✅ | `PUT /channels/{id}/threads` |
+| 10011 | 日程子频道 | — | — |
 
-3. **公开部署一定要设置强密码**
-   - `ADMIN_PASS`、`JWT_SECRET` 不要用默认值
+| speak_permission | 含义 |
+|---|---|
+| 1 | 所有人可发言 |
+| 2 | 仅管理员/指定身份组可发言 |
 
-4. **WS 保活存在官方下线风险**
-   - 当前为满足“频道发消息需在线”前置条件做的最小实现
-   - 如未来不可用，需要迁移 webhook
+本项目使用 **帖子 API** (`PUT /channels/{channel_id}/threads`)，`target_channel_id` 必须指向 **type=10007** 的子频道。
+
+---
+
+## 6) 快速部署流程
+
+```bash
+# 1. 准备配置文件
+cp .env.example .env
+vim .env              # 填写凭证
+vim config.yaml       # 配置 TG 源、QQ 目标、过滤规则
+
+# 2. 首次 Telegram 登录（交互式，输入验证码）
+docker compose run --rm backend python -c "
+from telethon.sync import TelegramClient; import os
+c = TelegramClient('/app/sessions/userbot', int(os.environ['TG_API_ID']), os.environ['TG_API_HASH'])
+c.start(); c.disconnect()
+"
+
+# 3. 启动所有服务
+docker compose up -d --build
+
+# 4. 验证服务状态
+docker compose ps
+docker compose logs -f --tail=100
+```
+
+---
+
+## 7) 配置验证清单
+
+部署后逐项检查：
+
+| # | 验证项 | 命令/方法 | 预期结果 |
+|---|---|---|---|
+| 1 | 服务全部运行 | `docker compose ps` | 4 个服务均 Up |
+| 2 | 健康检查 | `curl http://localhost:8000/healthz` | `{"ok":true,...}` |
+| 3 | 管理登录 | `POST /api/login` | 返回 JWT token |
+| 4 | QQ 频道可达 | `GET /api/qq/guilds` | 返回频道列表 |
+| 5 | 子频道正确 | `GET /api/qq/pick-default-channel?guild_id=...` | 返回 type=10007 的子频道 |
+| 6 | WS 保活正常 | `docker compose logs worker` | 日志出现 `READY! session established` |
+| 7 | TG 监听正常 | `docker compose logs backend` | 日志出现 `listening on X sources` |
+| 8 | 消息转发正常 | TG 频道发一条测试消息 | Worker 日志出现 `sent ok`，QQ 子频道出现帖子 |
+
+---
+
+## 8) 常见问题
+
+### Q: 消息显示 `sent ok` 但 QQ 频道看不到？
+
+- 检查 `target_channel_id` 是否指向了 **type=10007 的帖子子频道**（不是 type=4 的分类）
+- 帖子发布后在 QQ 频道的"帖子广场"/"资源"等帖子板块中查看，不是聊天消息
+- 确认私域机器人已从频道移除后重新添加（帖子 API 需要此步骤生效）
+
+### Q: 报错 `304003 — 请求参数不允许包含url`？
+
+- QQ 频道禁止消息中包含外部 URL
+- 确认 `config.yaml → rules.transforms` 中配置了 URL 删除规则（规则 7-9）
+
+### Q: 报错 `304022 — 主动消息不能在 00:00~06:00 推送`？
+
+- QQ 频道限制机器人在凌晨时段发消息
+- 已内置静默时段保护（`qq.quiet_hours_start/end`），消息会留在 Redis 队列，6 点后自动恢复
+
+### Q: 报错 `304045 — push channel message reach limit`？
+
+- QQ 频道消息发送数量达到上限
+- Worker 会自动将消息推回队列，等待 5 分钟后重试，无需手动干预
+
+### Q: WS 连接反复断开重连？
+
+- 检查 Worker 日志中的 `remaining` 值（WS 连接配额，每天 1500 次）
+- 已内置熔断机制：连续失败 5 次后休眠 30 分钟，配额耗尽则等待重置
+
+### Q: 首次 Telethon 登录报 `EOFError`？
+
+- 不能用 `docker compose up` 启动后再登录，必须用 `docker compose run --rm` 交互式登录
+- 登录成功后，session 文件保存在 `data/tg_session/`，后续正常 `docker compose up` 即可
+
+### Q: 图片发送失败？
+
+- 帖子 API 不支持直接上传图片，本项目会先通过 messages API 上传图片获取 QQ CDN URL，再嵌入 HTML 帖子
+- 如果图片上传失败，会自动降级为纯文本帖子
+- 容器重启后 `/tmp` 中的图片文件会丢失，死信重发时自动降级为纯文本

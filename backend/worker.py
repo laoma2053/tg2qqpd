@@ -34,6 +34,19 @@ try:
 except Exception:
     SEND_INTERVAL = 1.5
 
+# 静默时段（QQ 频道 00:00~06:00 禁止主动消息）
+QUIET_HOURS_START = int(cfg_get("qq.quiet_hours_start", 0))
+QUIET_HOURS_END = int(cfg_get("qq.quiet_hours_end", 6))
+
+
+def _in_quiet_hours() -> bool:
+    """检查当前是否处于静默时段。"""
+    hour = time.localtime().tm_hour
+    if QUIET_HOURS_START < QUIET_HOURS_END:
+        return QUIET_HOURS_START <= hour < QUIET_HOURS_END
+    else:  # 跨午夜，例如 22~6
+        return hour >= QUIET_HOURS_START or hour < QUIET_HOURS_END
+
 
 def _guess_first_text_channel_id() -> str | None:
     """从 guild_id 自动挑选一个可用的“可发言频道” channel_id。
@@ -270,42 +283,216 @@ def _is_online_required_error(resp: requests.Response | None, err_text: str | No
         return False
 
 
+def _is_rate_limited(resp: requests.Response | None) -> bool:
+    """检测是否触发 QQ 频道消息发送频率/数量限制。"""
+    if resp is None:
+        return False
+    try:
+        data = resp.json() or {}
+        code = int(data.get("code", 0))
+        msg = str(data.get("message") or "").lower()
+        # 304045 = push channel message reach limit
+        # 304003 有时也用于频率限制
+        return code == 304045 or "reach limit" in msg or "rate limit" in msg
+    except Exception:
+        return False
+
+
+def _build_title_and_body(text: str) -> tuple[str, str]:
+    """从清洗后的文本中提取帖子标题和正文。
+
+    - title: 取第一行（去除 Markdown **加粗** 标记），截断 60 字
+    - body:  去掉第一行后的剩余文本（避免标题与正文重复）
+    """
+    lines = (text or "").split("\n", 1)
+    raw_title = lines[0].strip() if lines else "更新"
+    # 去除 Markdown 加粗标记 **...**
+    title = raw_title.replace("**", "").strip()[:60] or "更新"
+    body = lines[1].strip() if len(lines) > 1 else ""
+    return title, body
+
+
 def send_text(channel_id: str, text: str):
-    return requests.post(
-        f"{BOT_API_BASE}/channels/{channel_id}/messages",
+    """发送纯文本到帖子频道（PUT /channels/{channel_id}/threads）。
+
+    QQ 频道目前已没有 type=0 的纯文字子频道，
+    所有子频道均为 type=10007（帖子频道），
+    需使用 PUT threads API 代替 POST messages。
+
+    帖子格式：format=1 为纯文本。
+    title 取文本第一行，content 为剩余文本（避免标题重复显示）。
+    """
+    title, body = _build_title_and_body(text)
+    return requests.put(
+        f"{BOT_API_BASE}/channels/{channel_id}/threads",
         headers={
             **auth_headers(),
             "Content-Type": "application/json",
         },
-        json={"content": text},
+        json={
+            "title": title,
+            "content": body,
+            "format": 1,  # FORMAT_TEXT = 纯文本
+        },
         timeout=15,
     )
 
 
-def send_with_image(channel_id: str, text: str, image_path: str):
-    """真实图文：使用 multipart/form-data 的 file_image 上传。
+def _build_richtext_json(body: str, image_url: str | None = None) -> str:
+    """构建 RichText JSON 字符串，用于 format=4 发帖。
 
-    文档：POST /channels/{channel_id}/messages
-    - content: 文本
-    - file_image: 文件
+    RichText 结构：
+      { "paragraphs": [ { "elems": [...], "props": {} }, ... ] }
 
-    注意：requests 会自动设置 multipart boundary，所以不要手动写 Content-Type。
+    元素类型：
+      ElemType 1 = TEXT,  2 = IMAGE,  4 = URL
     """
-    with open(image_path, "rb") as f:
-        files = {
-            # (filename, fileobj, mimetype)
-            "file_image": (os.path.basename(image_path) or "image.jpg", f, "image/jpeg"),
-        }
-        data = {
-            "content": text or "",
-        }
-        return requests.post(
-            f"{BOT_API_BASE}/channels/{channel_id}/messages",
-            headers=auth_headers(),
-            data=data,
-            files=files,
-            timeout=30,
+    paragraphs = []
+
+    # ── 图片段落（放在正文前面，更醒目）──
+    if image_url:
+        paragraphs.append({
+            "elems": [{
+                "type": 2,  # ELEM_TYPE_IMAGE
+                "image": {
+                    "third_url": image_url,
+                    "width_percent": 1.0,  # 100% 宽度
+                },
+            }],
+            "props": {},
+        })
+
+    # ── 正文段落（按换行拆分，每行一个段落）──
+    for line in (body or "").split("\n"):
+        paragraphs.append({
+            "elems": [{
+                "type": 1,  # ELEM_TYPE_TEXT
+                "text": {"text": line},
+            }],
+            "props": {},
+        })
+
+    return json.dumps({"paragraphs": paragraphs}, ensure_ascii=False)
+
+
+def send_with_image(channel_id: str, text: str, image_path: str):
+    """发送图文帖子到帖子频道。
+
+    策略（按优先级）：
+    1. 上传图片到 QQ CDN → 用 format=4 (JSON RichText) 发帖，图片用 ImageElem.third_url
+    2. 上传失败 → 降级为纯文本帖子（format=1）
+    """
+    # 尝试上传图片到 QQ，获取 QQ 内部图片 URL
+    image_url = _upload_image_to_qq(channel_id, image_path)
+
+    title, body = _build_title_and_body(text)
+
+    if image_url:
+        # 用 JSON RichText 格式，正文 + 图片
+        richtext_content = _build_richtext_json(body, image_url)
+        _log("INFO", f"sending thread with image: title={title[:30]} image_url={image_url[:80]}")
+        return requests.put(
+            f"{BOT_API_BASE}/channels/{channel_id}/threads",
+            headers={
+                **auth_headers(),
+                "Content-Type": "application/json",
+            },
+            json={
+                "title": title,
+                "content": richtext_content,
+                "format": 4,  # FORMAT_JSON (RichText)
+            },
+            timeout=15,
         )
+    else:
+        # 图片上传失败，降级为纯文本帖子
+        _log("WARN", f"image upload failed, fallback to text-only thread")
+        return send_text(channel_id, text)
+
+
+def _upload_image_to_qq(channel_id: str, image_path: str) -> str | None:
+    """上传图片并获取可在帖子中使用的图片 URL。
+
+    策略（按优先级）：
+    1. POST /channels/{channel_id}/messages 上传 file_image，提取返回的 attachment URL
+       （即使在帖子频道，QQ 可能仍返回 attachment；会产生一条内容为空格的消息副作用）
+    2. 如果上述方式失败，返回 None，由调用方降级为纯文本
+    """
+    try:
+        with open(image_path, "rb") as f:
+            files = {
+                "file_image": (os.path.basename(image_path) or "image.jpg", f, "image/jpeg"),
+            }
+            data = {
+                "content": " ",  # 最少需要一个字符
+            }
+            resp = requests.post(
+                f"{BOT_API_BASE}/channels/{channel_id}/messages",
+                headers=auth_headers(),
+                data=data,
+                files=files,
+                timeout=30,
+            )
+        _log("INFO", f"image upload response: status={resp.status_code} body={resp.text[:500]}")
+        if resp.ok:
+            body = resp.json()
+            # 从返回的 attachments 中提取图片 URL
+            attachments = body.get("attachments") or []
+            if attachments and isinstance(attachments, list):
+                url = attachments[0].get("url") or ""
+                if url:
+                    if not url.startswith("http"):
+                        url = "https://" + url
+                    _log("INFO", f"image uploaded to QQ CDN: {url}")
+                    return url
+            _log("WARN", f"image upload response has no attachment URL")
+        else:
+            _log("WARN", f"image upload to QQ failed: status={resp.status_code}")
+    except Exception as e:
+        _log("WARN", f"image upload exception: {e}")
+
+    # 备用方案：尝试通过免费图床上传
+    imgbb_url = _upload_image_to_imgbb(image_path)
+    if imgbb_url:
+        return imgbb_url
+
+    return None
+
+
+def _upload_image_to_imgbb(image_path: str) -> str | None:
+    """备用图床：使用 imgbb 免费 API 上传图片。
+
+    imgbb 免费账户无需 API key 也可上传（使用匿名上传）。
+    如果 config.yaml 配置了 imgbb_api_key 则使用，否则使用匿名。
+    """
+    import base64
+
+    try:
+        api_key = str(cfg_get("qq.imgbb_api_key", "")).strip()
+
+        with open(image_path, "rb") as f:
+            image_data = base64.b64encode(f.read()).decode("utf-8")
+
+        payload = {"image": image_data}
+        if api_key:
+            payload["key"] = api_key
+            upload_url = "https://api.imgbb.com/1/upload"
+        else:
+            # 无 key 时跳过 imgbb
+            _log("INFO", "no imgbb_api_key configured, skip imgbb upload")
+            return None
+
+        resp = requests.post(upload_url, data=payload, timeout=30)
+        if resp.ok:
+            data = resp.json().get("data", {})
+            url = data.get("url") or data.get("display_url") or ""
+            if url:
+                _log("INFO", f"image uploaded to imgbb: {url}")
+                return url
+        _log("WARN", f"imgbb upload failed: status={resp.status_code} body={resp.text[:200]}")
+    except Exception as e:
+        _log("WARN", f"imgbb upload exception: {e}")
+    return None
 
 
 def normalize_forward_text(text: str) -> str:
@@ -357,6 +544,14 @@ else:
     _log("WARN", f"QQ WS not ready after 120s (err={_keepalive.last_error}), will process queue anyway")
 
 while True:
+    # ── 静默时段：QQ 频道 00:00~06:00 禁止主动消息 ──
+    # 消息留在 Redis 队列，时段结束后自动恢复发送
+    if _in_quiet_hours():
+        _log("INFO", f"quiet hours ({QUIET_HOURS_START}:00~{QUIET_HOURS_END}:00), pausing queue consumption...")
+        while _in_quiet_hours():
+            time.sleep(60)  # 每分钟检查一次
+        _log("INFO", "quiet hours ended, resuming queue consumption")
+
     # ── WS 不在线时，不从队列取消息，阻塞等待 ──
     # 这样消息安全留在 Redis 里，WS 恢复后按顺序发出，不会进死信
     if not _keepalive.ready:
@@ -400,16 +595,23 @@ while True:
 
         def _do_send_once() -> tuple[bool, requests.Response | None]:
             if task.get("media"):
-                r1 = send_with_image(qq_channel_id, content, task["media"])
-                if r1.ok:
-                    return True, r1
+                media_path = task["media"]
+                # 图片文件不存在时（死信重发、容器重启后 /tmp 清空），降级为纯文字
+                if not os.path.exists(media_path):
+                    _log("WARN", f"media file missing, fallback to text-only: {media_path}")
+                else:
+                    r1 = send_with_image(qq_channel_id, content, media_path)
+                    if r1.ok:
+                        return True, r1
 
-                compressed = compress_image(task["media"])
-                if compressed:
-                    r2 = send_with_image(qq_channel_id, content, compressed)
-                    if r2.ok:
-                        return True, r2
+                    # 原图发送失败，尝试压缩后重试
+                    compressed = compress_image(media_path)
+                    if compressed:
+                        r2 = send_with_image(qq_channel_id, content, compressed)
+                        if r2.ok:
+                            return True, r2
 
+                # 图片发送全部失败，降级为纯文本
                 r3 = send_text(qq_channel_id, content)
                 return bool(r3.ok), r3
 
@@ -417,6 +619,14 @@ while True:
             return bool(r0.ok), r0
 
         success, resp = _do_send_once()
+
+        # ── 限流检测：QQ 频道消息发送达到上限 → 暂停等待 ──
+        if not success and resp is not None and _is_rate_limited(resp):
+            _log("WARN", "QQ channel message rate limit hit! pushing back to queue, sleeping 300s...")
+            # 把这条消息推回队列头部，不进死信
+            r.rpush("queue", json.dumps(task, ensure_ascii=False))
+            time.sleep(300)  # 等 5 分钟再继续
+            continue
 
         # 失败时：鉴权/在线问题 → 强制刷新 token + 等待 WS ready → 再试一次
         if not success and resp is not None:

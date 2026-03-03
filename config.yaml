@@ -29,6 +29,7 @@ telegram:
     - "@Q_dianying"
     - "@Q_jilupian"
     - "@Aliyun_4K_Movies"
+    - "@Netdisk_Movies"
 
 # --------------------------------------------------
 # QQ 频道 Bot 配置
@@ -57,10 +58,20 @@ qq:
   target_guild_id: "3628508121088643592"
 
   # 目标子频道 channel_id（留空则根据 guild_id 自动选择第一个可发言频道）
-  target_channel_id: ""
+  target_channel_id: "717979188"
 
   # 发送最小间隔（秒），防风控
-  send_interval: 30
+  send_interval: 2
+
+  # 备用图床 API Key（可选）
+  # 当 QQ CDN 上传图片失败时，用 imgbb.com 免费图床作为备用
+  # 注册 https://api.imgbb.com/ 获取免费 API Key，留空则跳过
+  imgbb_api_key: "296c6786125967deb1f73f2a4634a0fe"
+
+  # 静默时段：QQ 频道禁止机器人在 00:00~06:00 发主动消息
+  # Worker 在此时段暂停消费队列，消息留在 Redis，时段结束后自动恢复
+  quiet_hours_start: 0    # 开始小时（0 = 凌晨0点）
+  quiet_hours_end: 6      # 结束小时（6 = 早上6点）
 
 # --------------------------------------------------
 # 后台管理 & 鉴权
@@ -125,49 +136,77 @@ rules:
   # ------------------------------------------------
   transforms:
 
-    # (1) 将首行前缀"名称："替换为"🎬已更新："
+    # (1) 将"名称："替换为"🎬已更新："
     - type: regex_replace
       pattern: "^名称[:：]\\s*"
       repl: "🎬已更新："
       flags: "m"
 
-    # (2) 删除"🗂 信息"块（包含体积/标签等），直到下一个大段落或文本结束
+    # (2) 去除 Markdown 加粗标记 **
+    - type: regex_replace
+      pattern: "\\*\\*"
+      repl: ""
+
+    # (3) 删除"链接：https://..."行
+    - type: regex_replace
+      pattern: "(?m)^链接[:：]\\s*https?://\\S+\\s*$"
+      repl: ""
+
+    # (4) 删除"阿里：https://..."行
+    - type: regex_replace
+      pattern: "(?m)^阿里[:：]\\s*https?://\\S+\\s*$"
+      repl: ""
+
+    # (5) 删除"夸克：https://..."行
+    - type: regex_replace
+      pattern: "(?m)^夸克[:：]\\s*https?://\\S+\\s*$"
+      repl: ""
+
+    # (6) 删除"百度：https://..."行
+    - type: regex_replace
+      pattern: "(?m)^百度[:：]\\s*https?://\\S+\\s*$"
+      repl: ""
+
+    # (7) 删除"📁 大小：..."行
+    - type: regex_replace
+      pattern: "(?m)^📁\\s*大小[:：].*$"
+      repl: ""
+
+    # (8) 删除"🏷 标签：..."行
+    - type: regex_replace
+      pattern: "(?m)^🏷\\s*标签[:：].*$"
+      repl: ""
+
+    # (9) 删除"🗂 信息"块（包含体积/标签等），直到下一个大段落或文本结束
     - type: regex_replace
       pattern: "(?ms)^🗂\\s*信息[:：]?\\s*$(?:\\n.*?)*?(?=^📝\\s*内容简介|^🍟|^📤|\\Z)"
       repl: ""
 
-    # (3) 删除投稿/频道/群组/广告合作等尾部导流信息
+    # (10) 删除投稿/频道/群组/广告合作等尾部导流信息
     - type: regex_replace
       pattern: "(?s)🍟\\s*投稿人[：:].*$"
       repl: ""
 
-    # (4) 删除"链接：https://... + 📁 大小 + 🏷 标签"块
+    # (11) 删除原文自带的"📤 资源链接：..."提示行
     - type: regex_replace
-      pattern: "(?ms)^链接：https?://.*$(?:\\n\\s*)*^📁\\s*大小：.*$(?:\\n\\s*)*^🏷\\s*标签：.*$"
+      pattern: "(?m)^📤\\s*资源链接[:：].*$"
       repl: ""
 
-    # (5) 删除"阿里/夸克/百度：https://... + 📁 大小 + 🏷 标签"尾部信息
+    # (12) 删除所有剩余的 http/https 链接（QQ 频道禁止外部 URL）
     - type: regex_replace
-      pattern: "(?ms)^(?:阿里|夸克|百度)：https?://.*$(?:\\n\\s*)*^📁\\s*大小：.*$(?:\\n\\s*)*^🏷\\s*标签：.*$(?:\\n.*)*(?=\\Z)"
+      pattern: "https?://[^\\s]+"
       repl: ""
-
-    # (6) 删除原文自带的"📤 资源链接：..."提示行
-    - type: regex_replace
-      pattern: "(?m)^📤\\s*资源链接：.*$"
-      repl: ""
-
-    # (7) quark 网盘链接替换为自定义地址
-    - type: regex_replace
-      pattern: "https?://pan\\.quark\\.cn/s/[A-Za-z0-9]+"
-      repl: "zhuiju.us"
       flags: "i"
 
-    # (8) 追加资源说明模板
+    # (13) 追加资源说明模板
     - type: append
       text: |
         📤 资源链接：
         加入QQ群963115963搜资源
-        或访问 zhuiju.us 搜更多资源
+        夸克网盘:https://pan.quark.cn/s/31b3479e3209
+        百度网盘:https://pan.baidu.com/s/1d2kpf_PogQXfkomoqmrxeg?pwd=zhui 
+        UC网盘:https://drive.uc.cn/s/79521dbef0864?public=1
+        迅雷网盘:https://pan.xunlei.com/s/VOmmtFDZ2Dx1N67g9kI95SW3A1?pwd=sbqq
 
 # --------------------------------------------------
 # 日志
