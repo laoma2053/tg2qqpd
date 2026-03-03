@@ -3,7 +3,7 @@
 # ==================================================
 #
 # 修改后重启对应容器即可生效：
-#   docker compose restart backend worker
+#   docker compose restart listen publish
 #
 # 敏感凭证（API ID / Secret / Token）仍留在 .env 中，
 # 由 Docker Compose env_file 注入，本文件通过 ${ENV_VAR} 语法引用。
@@ -63,19 +63,10 @@ qq:
   # 发送最小间隔（秒），防风控
   send_interval: 2
 
-<<<<<<< HEAD
-  # 图床 API Key（推荐配置）
+  # 图床 API Key（从 .env 注入，敏感凭证不上传 GitHub）
   # 图片上传首选 imgbb.com，不消耗 QQ 消息 API 配额
   # 注册 https://api.imgbb.com/ 获取免费 API Key，留空则回退到 QQ CDN 上传
-  imgbb_api_key: "296c6786125967deb1f73f2a4634a0fe"
-=======
-
-  # 图床 API Key（推荐配置）
-  # 图片上传首选 imgbb.com，不消耗 QQ 消息 API 配额
-  # 注册 https://api.imgbb.com/ 获取免费 API Key，留空则回退到 QQ CDN 上传
-  imgbb_api_key: "296c6786125967deb1f73f2a4634a0fe1"
-
->>>>>>> ad95fa4e200cddedfa3d33026c59bf6f49777716
+  imgbb_api_key: ${IMGBB_API_KEY}
 
   # 静默时段：QQ 频道禁止机器人在 00:00~06:00 发主动消息
   # Worker 在此时段暂停消费队列，消息留在 Redis，时段结束后自动恢复

@@ -148,7 +148,7 @@ _ENV_RESOLVED_SOURCES: set[str] = set()
 
 def _log(level: str, msg: str):
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{ts}] backend  | {level:5s} | {msg}")
+    print(f"[{ts}] listen   | {level:5s} | {msg}")
 
 
 async def refresh_env_sources_cache() -> list[int]:

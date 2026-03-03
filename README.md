@@ -2,7 +2,7 @@
 
 **Telegram → QQ 频道** 自动转发服务。监听指定 Telegram 频道的新消息，经过过滤与文案清洗后，以**帖子**形式发布到 QQ 频道子频道。
 
-> 运行形态：Docker Compose（PostgreSQL + Redis + backend + worker）  
+> 运行形态：Docker Compose（PostgreSQL + Redis + listen + publish）  
 > 最后更新：2026-03-03
 
 ---
@@ -24,7 +24,7 @@
 - **关键词/正则过滤**：支持黑名单（block）+ 白名单（allow）两种模式
 - **去重**：PostgreSQL `processed` 表记录已转发的 `(tg_chat_id, tg_msg_id)`
 - **死信队列**：发送失败写入 `dead` 表，支持查看与批量重放
-- **静默时段**：QQ 频道 00:00~06:00 禁止机器人发主动消息，Worker 自动暂停，消息安全留在 Redis
+- **静默时段**：QQ 频道 00:00~06:00 禁止机器人发主动消息，Publish 自动暂停，消息安全留在 Redis
 - **限流保护**：检测到 QQ 发送频率限制（304045）时自动回退队列 + 等待恢复
 - **WS 保活 + 熔断**：QQ 网关 WebSocket 在线保活，连续失败 5 次触发熔断（休眠 30 分钟），自动恢复
 - **管理 API**：登录鉴权、运维指标、死信管理、频道调试接口
@@ -37,7 +37,7 @@
 Telegram (Telethon userbot)
   │
   ▼
-backend (app.py)
+listen (app.py)
   ├─ 监听 6 个 TG 频道
   ├─ 关键词/正则过滤
   ├─ 下载图片（photo + document）到共享 /tmp
@@ -47,7 +47,7 @@ backend (app.py)
 Redis list "queue"
   │
   ▼
-worker (worker.py)
+publish (worker.py)
   ├─ 出队 → 文案清洗（YAML 规则引擎）
   ├─ 标题/正文分离（第一行 → 帖子标题）
   ├─ 静默时段 / WS 未就绪 → 暂停消费
@@ -74,8 +74,8 @@ tg2qqpd/
 ├── backend/
 │   ├── Dockerfile
 │   ├── requirements.txt
-│   ├── app.py               # TG 监听 + FastAPI 管理 API
-│   ├── worker.py             # 消费队列 → 文案清洗 → 发帖到 QQ
+│   ├── app.py               # TG 监听 + FastAPI 管理 API（listen 服务）
+│   ├── worker.py             # 消费队列 → 文案清洗 → 发帖到 QQ（publish 服务）
 │   ├── config.py             # YAML 配置加载器（支持 ${ENV_VAR} 语法）
 │   ├── db.py                 # PostgreSQL（processed / dead）
 │   ├── auth.py               # JWT 登录鉴权
@@ -88,7 +88,7 @@ tg2qqpd/
 ├── data/
 │   ├── postgres/             # PostgreSQL 数据持久化
 │   ├── tg_session/           # Telegram 登录态
-│   └── tg_media/             # TG 媒体文件（共享给 worker）
+│   └── tg_media/             # TG 媒体文件（共享给 publish）
 ├── docs/
 │   ├── setup-guide.md        # 部署指南
 │   ├── qq-channel-info.md    # QQ 频道/子频道信息与查询命令
@@ -116,6 +116,9 @@ QQ_APP_ID=102835488
 QQ_APP_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 QQ_BOT_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+# imgbb 图床（可选，留空则跳过）
+IMGBB_API_KEY=your_imgbb_api_key_here
+
 # 后台管理
 JWT_SECRET=your-jwt-secret
 ADMIN_PASS=your-admin-password
@@ -137,7 +140,7 @@ DATABASE_URL=postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq
 | `qq.target_guild_id` | 目标 QQ 频道 guild_id |
 | `qq.target_channel_id` | 目标帖子子频道 channel_id（留空自动选择） |
 | `qq.send_interval` | 发送间隔（秒），防风控，当前设为 2 |
-| `qq.imgbb_api_key` | 备用图床 API Key（可选，QQ CDN 上传失败时使用） |
+| `qq.imgbb_api_key` | 备用图床 API Key（从 .env 注入，可选） |
 | `qq.quiet_hours_start/end` | 静默时段（默认 0~6 点） |
 | `rules.filter` | 黑名单/白名单过滤规则 |
 | `rules.transforms` | 文案清洗规则（正则替换 + 追加模板） |
@@ -172,9 +175,9 @@ DATABASE_URL=postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq
 
 ---
 
-## Worker 保护机制
+## Publish 保护机制
 
-Worker（`worker.py`）内置多层保护，确保消息不丢失：
+Publish 服务（`worker.py`）内置多层保护，确保消息不丢失：
 
 | 保护 | 触发条件 | 行为 |
 |---|---|---|
@@ -252,10 +255,10 @@ docker compose up -d --build
 
 ### 3) Telegram 首次登录
 
-首次启动 backend 需要在终端完成 Telethon 交互式登录（验证码/二步验证）：
+首次启动 listen 需要在终端完成 Telethon 交互式登录（验证码/二步验证）：
 
 ```bash
-docker compose run --rm backend python -c "
+docker compose run --rm listen python -c "
 from telethon.sync import TelegramClient
 c = TelegramClient('/app/sessions/userbot', API_ID, API_HASH)
 c.start()
@@ -274,11 +277,11 @@ docker compose ps
 # 查看日志（实时跟踪）
 docker compose logs -f --tail=200
 
-# 只看 worker 日志
-docker compose logs -f worker
+# 只看 publish 日志
+docker compose logs -f publish
 
 # 重启（修改 config.yaml 后）
-docker compose restart backend worker
+docker compose restart listen publish
 
 # 重建（修改代码/Dockerfile 后）
 docker compose up -d --build

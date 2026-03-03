@@ -14,7 +14,7 @@ version: "3.9"
 #    - 重启：
 #      docker compose restart
 #
-# 管理接口（backend 容器 8000 端口）：
+# 管理接口（listen 容器 8000 端口）：
 # - 健康检查（不鉴权）：
 #   http://<服务器IP或域名>:8000/healthz
 # - 登录拿 JWT：
@@ -64,10 +64,10 @@ services:
       - tg2qq-net
 
   # =========================
-  # backend：TG 监听 + Web API
+  # listen：TG 监听 + Web API
   # =========================
-  backend:
-    container_name: tg2qqpd-backend
+  listen:
+    container_name: tg2qqpd-listen
     build: ./backend
     restart: always
     env_file:
@@ -77,7 +77,7 @@ services:
     volumes:
       # Telegram 登录态（挂载到 /app/sessions，避免覆盖应用代码）
       - ./data/tg_session:/app/sessions
-      # TG 媒体文件共享（供 worker 读取）
+      # TG 媒体文件共享（供 publish 读取）
       - ./data/tg_media:/tmp
       # 统一配置文件
       - ./config.yaml:/app/config.yaml:ro
@@ -92,10 +92,10 @@ services:
       - "8000:8000"
 
   # =========================
-  # worker：真正发 QQ 消息
+  # publish：真正发 QQ频道 消息
   # =========================
-  worker:
-    container_name: tg2qqpd-worker
+  publish:
+    container_name: tg2qqpd-publish
     build: ./backend
     command: python worker.py
     restart: always
@@ -115,4 +115,4 @@ services:
     networks:
       - tg2qq-net
     # ❗❗❗ 不要 ports
-    # worker 永远不应该被外部访问
+    # publish 永远不应该被外部访问

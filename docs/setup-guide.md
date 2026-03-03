@@ -46,11 +46,11 @@
 >
 > access_token 由程序自动获取和刷新，**无需手动填写**。
 
-### B2. 备用图床（写入 `config.yaml`，可选）
+### B2. 备用图床（写入 `.env`，可选）
 
 | 配置项 | 必填 | 作用 | 获取方式 |
 |---|:---:|---|---|
-| `qq.imgbb_api_key` | ❌ | QQ CDN 上传图片失败时，用 imgbb 图床中转 | 注册 [imgbb API](https://api.imgbb.com/) 获取免费 Key |
+| `IMGBB_API_KEY` | ❌ | QQ CDN 上传图片失败时，用 imgbb 图床中转 | 注册 [imgbb API](https://api.imgbb.com/) 获取免费 Key |
 
 > 如果 QQ CDN 上传正常工作，此项无需配置。留空则跳过 imgbb 备用方案，图片上传失败时直接降级为纯文本帖子。
 
@@ -111,7 +111,7 @@ telegram:
 首次启动需要在终端完成交互式登录（输入验证码/二步验证密码）：
 
 ```bash
-docker compose run --rm backend python -c "
+docker compose run --rm listen python -c "
 from telethon.sync import TelegramClient
 import os
 c = TelegramClient('/app/sessions/userbot', int(os.environ['TG_API_ID']), os.environ['TG_API_HASH'])
@@ -227,6 +227,9 @@ QQ_APP_ID=102835488
 QQ_APP_SECRET=your_app_secret_here
 QQ_BOT_TOKEN=your_bot_token_here
 
+# === imgbb 图床（可选，留空则跳过 imgbb 备用方案）===
+IMGBB_API_KEY=your_imgbb_api_key_here
+
 # === 后台管理 ===
 JWT_SECRET=change_me_to_a_long_random_string
 ADMIN_PASS=change_me_to_a_strong_password
@@ -267,7 +270,7 @@ vim .env              # 填写凭证
 vim config.yaml       # 配置 TG 源、QQ 目标、过滤规则
 
 # 2. 首次 Telegram 登录（交互式，输入验证码）
-docker compose run --rm backend python -c "
+docker compose run --rm listen python -c "
 from telethon.sync import TelegramClient; import os
 c = TelegramClient('/app/sessions/userbot', int(os.environ['TG_API_ID']), os.environ['TG_API_HASH'])
 c.start(); c.disconnect()
@@ -294,9 +297,9 @@ docker compose logs -f --tail=100
 | 3 | 管理登录 | `POST /api/login` | 返回 JWT token |
 | 4 | QQ 频道可达 | `GET /api/qq/guilds` | 返回频道列表 |
 | 5 | 子频道正确 | `GET /api/qq/pick-default-channel?guild_id=...` | 返回 type=10007 的子频道 |
-| 6 | WS 保活正常 | `docker compose logs worker` | 日志出现 `READY! session established` |
-| 7 | TG 监听正常 | `docker compose logs backend` | 日志出现 `listening on X sources` |
-| 8 | 消息转发正常 | TG 频道发一条测试消息 | Worker 日志出现 `sent ok`，QQ 子频道出现帖子 |
+| 6 | WS 保活正常 | `docker compose logs publish` | 日志出现 `✅ WS 连接就绪` |
+| 7 | TG 监听正常 | `docker compose logs listen` | 日志出现 `📡 Telethon 事件监听已注册` |
+| 8 | 消息转发正常 | TG 频道发一条测试消息 | publish 日志出现 `✅ 发送成功`，QQ 子频道出现帖子 |
 
 ---
 
@@ -321,11 +324,11 @@ docker compose logs -f --tail=100
 ### Q: 报错 `304045 — push channel message reach limit`？
 
 - QQ 频道消息发送数量达到上限
-- Worker 会自动将消息推回队列，等待 5 分钟后重试，无需手动干预
+- Publish 会自动将消息推回队列，等待 5 分钟后重试，无需手动干预
 
 ### Q: WS 连接反复断开重连？
 
-- 检查 Worker 日志中的 `remaining` 值（WS 连接配额，每天 1500 次）
+- 检查 Publish 日志中的 `remaining` 值（WS 连接配额，每天 1500 次）
 - 已内置熔断机制：连续失败 5 次后休眠 30 分钟，配额耗尽则等待重置
 
 ### Q: 首次 Telethon 登录报 `EOFError`？
@@ -342,4 +345,4 @@ docker compose logs -f --tail=100
   4. 所有图片上传方式都失败时，自动降级为纯文本帖子
 - TG 端支持两种图片形式：`photo`（压缩图）和 `document`（原图/PNG/GIF，MIME 为 `image/*` 时自动识别）
 - 容器重启后 `/tmp` 中的图片文件会丢失，死信重发时自动降级为纯文本
-- 图片通过共享卷 `./data/tg_media:/tmp` 在 backend 和 worker 之间传递
+- 图片通过共享卷 `./data/tg_media:/tmp` 在 listen 和 publish 之间传递

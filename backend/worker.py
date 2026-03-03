@@ -25,7 +25,7 @@ QQ_TARGET_GUILD_ID = str(cfg_get("qq.target_guild_id") or "").strip()
 def _log(level: str, msg: str):
     # 简单结构化，方便 docker logs grep
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{ts}] worker   | {level:5s} | {msg}")
+    print(f"[{ts}] publish  | {level:5s} | {msg}")
 
 
 # 防风控：发送间隔（秒）
