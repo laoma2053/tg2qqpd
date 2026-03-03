@@ -46,6 +46,14 @@
 >
 > access_token 由程序自动获取和刷新，**无需手动填写**。
 
+### B2. 备用图床（写入 `config.yaml`，可选）
+
+| 配置项 | 必填 | 作用 | 获取方式 |
+|---|:---:|---|---|
+| `qq.imgbb_api_key` | ❌ | QQ CDN 上传图片失败时，用 imgbb 图床中转 | 注册 [imgbb API](https://api.imgbb.com/) 获取免费 Key |
+
+> 如果 QQ CDN 上传正常工作，此项无需配置。留空则跳过 imgbb 备用方案，图片上传失败时直接降级为纯文本帖子。
+
 ### C. 后台管理鉴权（写入 `.env`）
 
 | 变量 | 必填 | 作用 | 说明 |
@@ -196,6 +204,7 @@ qq:
   target_channel_id: "717979188"            # 帖子子频道 ID（留空则自动选择）
 
   send_interval: 2          # 发送间隔（秒），防风控
+  imgbb_api_key: ""         # 备用图床 API Key（可选，留空则跳过）
   quiet_hours_start: 0      # 静默时段开始（0 点）
   quiet_hours_end: 6        # 静默时段结束（6 点）
 ```
@@ -326,6 +335,11 @@ docker compose logs -f --tail=100
 
 ### Q: 图片发送失败？
 
-- 帖子 API 不支持直接上传图片，本项目会先通过 messages API 上传图片获取 QQ CDN URL，再嵌入 HTML 帖子
-- 如果图片上传失败，会自动降级为纯文本帖子
+- 帖子 API 不支持直接上传图片文件，本项目采用以下策略：
+  1. 先通过 `POST /channels/{channel_id}/messages` 上传图片获取 QQ CDN URL
+  2. QQ CDN 失败时，使用 imgbb 免费图床中转（需在 `config.yaml → qq.imgbb_api_key` 配置 API Key）
+  3. 获取到图片 URL 后，用 `format=4` (JSON RichText) 的 `ImageElem.third_url` 嵌入帖子
+  4. 所有图片上传方式都失败时，自动降级为纯文本帖子
+- TG 端支持两种图片形式：`photo`（压缩图）和 `document`（原图/PNG/GIF，MIME 为 `image/*` 时自动识别）
 - 容器重启后 `/tmp` 中的图片文件会丢失，死信重发时自动降级为纯文本
+- 图片通过共享卷 `./data/tg_media:/tmp` 在 backend 和 worker 之间传递

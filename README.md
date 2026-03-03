@@ -10,12 +10,15 @@
 ## 功能特性
 
 - **TG → QQ 帖子转发**：监听多个 Telegram 频道，自动转发到 QQ 频道的帖子子频道（type=10007）
-- **帖子 API 发送**：使用 `PUT /channels/{channel_id}/threads` 发帖，支持纯文本（format=1）和 HTML 图文（format=2）
-- **图文支持**：图片先上传至 QQ CDN 获取内部 URL，再以 HTML `<img>` 嵌入帖子
+- **帖子 API 发送**：使用 `PUT /channels/{channel_id}/threads` 发帖，支持纯文本（format=1）和 JSON RichText 图文（format=4）
+- **图文支持**：TG 图片自动下载，上传至 QQ CDN 获取内部 URL，再以 JSON RichText `ImageElem` 嵌入帖子；支持 photo 和 document（大图/PNG）两种图片形式
+- **备用图床**：QQ CDN 上传失败时，自动通过 imgbb 免费图床中转（需配置 `imgbb_api_key`）
+- **帖子标题/正文分离**：自动取第一行作为帖子标题，其余作为正文，避免标题内容重复显示
 - **多层降级策略**：
-  1. 图文帖子发送失败 → 压缩图片重试
-  2. 压缩仍失败 → 降级为纯文本帖子
-  3. 图片文件丢失（容器重启后 `/tmp` 清空）→ 自动降级纯文本
+  1. 图文帖子（JSON RichText）发送失败 → 压缩图片重试
+  2. 压缩仍失败 → 尝试 imgbb 备用图床
+  3. 图床也失败 → 降级为纯文本帖子
+  4. 图片文件丢失（容器重启后 `/tmp` 清空）→ 自动降级纯文本
 - **YAML 驱动的文案清洗**：正则替换 + 追加模板，规则在 `config.yaml` 中配置，改完重启即生效
 - **URL 自动删除**：QQ 频道禁止外部 URL，所有 `https://...` 链接在发送前自动清除
 - **关键词/正则过滤**：支持黑名单（block）+ 白名单（allow）两种模式
@@ -35,8 +38,9 @@ Telegram (Telethon userbot)
   │
   ▼
 backend (app.py)
-  ├─ 监听 5 个 TG 频道
+  ├─ 监听 6 个 TG 频道
   ├─ 关键词/正则过滤
+  ├─ 下载图片（photo + document）到共享 /tmp
   ├─ 入 Redis 队列
   │
   ▼
@@ -45,7 +49,10 @@ Redis list "queue"
   ▼
 worker (worker.py)
   ├─ 出队 → 文案清洗（YAML 规则引擎）
+  ├─ 标题/正文分离（第一行 → 帖子标题）
   ├─ 静默时段 / WS 未就绪 → 暂停消费
+  ├─ 有图片 → 上传 QQ CDN / imgbb → format=4 RichText 发帖
+  ├─ 无图片 → format=1 纯文本发帖
   ├─ PUT /channels/{id}/threads 发帖
   ├─ 成功 → 写 processed 去重表
   └─ 失败 → 写 dead 死信表 / 限流回退队列
@@ -130,6 +137,7 @@ DATABASE_URL=postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq
 | `qq.target_guild_id` | 目标 QQ 频道 guild_id |
 | `qq.target_channel_id` | 目标帖子子频道 channel_id（留空自动选择） |
 | `qq.send_interval` | 发送间隔（秒），防风控，当前设为 2 |
+| `qq.imgbb_api_key` | 备用图床 API Key（可选，QQ CDN 上传失败时使用） |
 | `qq.quiet_hours_start/end` | 静默时段（默认 0~6 点） |
 | `rules.filter` | 黑名单/白名单过滤规则 |
 | `rules.transforms` | 文案清洗规则（正则替换 + 追加模板） |
@@ -147,15 +155,18 @@ DATABASE_URL=postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq
 | # | 类型 | 作用 |
 |---|---|---|
 | 1 | regex_replace | `名称：` 前缀替换为 `🎬已更新：` |
-| 2 | regex_replace | 删除 `🗂 信息` 块（体积/标签等） |
-| 3 | regex_replace | 删除投稿人/频道/群组等尾部导流 |
-| 4 | regex_replace | 删除 `链接：https://... + 📁 大小 + 🏷 标签` 块 |
-| 5 | regex_replace | 删除 `阿里/夸克/百度：https://...` 尾部信息 |
-| 6 | regex_replace | 删除原文 `📤 资源链接：...` 提示行 |
-| 7 | regex_replace | 删除夸克网盘链接 |
-| 8 | regex_replace | 删除阿里云盘链接 |
-| 9 | regex_replace | 删除所有剩余 `https://...` 链接（QQ 禁止外部 URL） |
-| 10 | append | 追加引导文案（QQ 群号 + 搜索关键词） |
+| 2 | regex_replace | 去除 Markdown 加粗标记 `**` |
+| 3 | regex_replace | 删除 `链接：https://...` 行 |
+| 4 | regex_replace | 删除 `阿里：https://...` 行 |
+| 5 | regex_replace | 删除 `夸克：https://...` 行 |
+| 6 | regex_replace | 删除 `百度：https://...` 行 |
+| 7 | regex_replace | 删除 `� 大小：...` 行 |
+| 8 | regex_replace | 删除 `🏷 标签：...` 行 |
+| 9 | regex_replace | 删除 `🗂 信息` 块（体积/标签等） |
+| 10 | regex_replace | 删除投稿人/频道/群组等尾部导流 |
+| 11 | regex_replace | 删除原文 `📤 资源链接：...` 提示行 |
+| 12 | regex_replace | 删除所有剩余 `https://...` 链接 |
+| 13 | append | 追加资源说明模板（QQ 群号 + 网盘链接） |
 
 内置收尾处理：多空行收敛（≥3 换行→2）+ 首尾去空白。
 
@@ -171,7 +182,7 @@ Worker（`worker.py`）内置多层保护，确保消息不丢失：
 | **WS 未就绪** | QQ WebSocket 未连接/未 READY | 暂停消费，等待 WS 恢复 |
 | **限流回退** | QQ 返回 304045 (reach limit) | 消息推回队列头部，等待 5 分钟 |
 | **鉴权重试** | QQ 返回 401/403 | 刷新 token + 等待 WS → 重试一次 |
-| **图片降级** | 图片发送失败 / 文件丢失 | 压缩重试 → 降级纯文本帖子 |
+| **图片降级** | 图片发送失败 / 文件丢失 | 压缩重试 → imgbb 备用图床 → 降级纯文本帖子 |
 | **死信兜底** | 所有重试都失败 | 写入 dead 表，支持后续手动重放 |
 
 ### WS 保活熔断（`qq_ws_keepalive.py`）
