@@ -63,9 +63,9 @@ qq:
   # 发送最小间隔（秒），防风控
   send_interval: 2
 
-  # 备用图床 API Key（可选）
-  # 当 QQ CDN 上传图片失败时，用 imgbb.com 免费图床作为备用
-  # 注册 https://api.imgbb.com/ 获取免费 API Key，留空则跳过
+  # 图床 API Key（推荐配置）
+  # 图片上传首选 imgbb.com，不消耗 QQ 消息 API 配额
+  # 注册 https://api.imgbb.com/ 获取免费 API Key，留空则回退到 QQ CDN 上传
   imgbb_api_key: "296c6786125967deb1f73f2a4634a0fe"
 
   # 静默时段：QQ 频道禁止机器人在 00:00~06:00 发主动消息

@@ -414,10 +414,15 @@ def _upload_image_to_qq(channel_id: str, image_path: str) -> str | None:
     """上传图片并获取可在帖子中使用的图片 URL。
 
     策略（按优先级）：
-    1. POST /channels/{channel_id}/messages 上传 file_image，提取返回的 attachment URL
-       （即使在帖子频道，QQ 可能仍返回 attachment；会产生一条内容为空格的消息副作用）
-    2. 如果上述方式失败，返回 None，由调用方降级为纯文本
+    1. imgbb 图床（首选，不消耗 QQ API 配额，无副作用）
+    2. POST /channels/{channel_id}/messages 上传 file_image（备用，会消耗 QQ 消息配额）
     """
+    # ── 首选：imgbb 图床 ──
+    imgbb_url = _upload_image_to_imgbb(image_path)
+    if imgbb_url:
+        return imgbb_url
+
+    # ── 备用：QQ CDN（会消耗消息 API 配额，且可能产生空消息副作用）──
     try:
         with open(image_path, "rb") as f:
             files = {
@@ -433,10 +438,9 @@ def _upload_image_to_qq(channel_id: str, image_path: str) -> str | None:
                 files=files,
                 timeout=30,
             )
-        _log("INFO", f"image upload response: status={resp.status_code} body={resp.text[:500]}")
+        _log("INFO", f"image upload (QQ CDN) response: status={resp.status_code} body={resp.text[:500]}")
         if resp.ok:
             body = resp.json()
-            # 从返回的 attachments 中提取图片 URL
             attachments = body.get("attachments") or []
             if attachments and isinstance(attachments, list):
                 url = attachments[0].get("url") or ""
@@ -449,12 +453,7 @@ def _upload_image_to_qq(channel_id: str, image_path: str) -> str | None:
         else:
             _log("WARN", f"image upload to QQ failed: status={resp.status_code}")
     except Exception as e:
-        _log("WARN", f"image upload exception: {e}")
-
-    # 备用方案：尝试通过免费图床上传
-    imgbb_url = _upload_image_to_imgbb(image_path)
-    if imgbb_url:
-        return imgbb_url
+        _log("WARN", f"image upload (QQ CDN) exception: {e}")
 
     return None
 
