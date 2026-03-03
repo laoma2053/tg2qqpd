@@ -25,7 +25,7 @@ QQ_TARGET_GUILD_ID = str(cfg_get("qq.target_guild_id") or "").strip()
 def _log(level: str, msg: str):
     # 简单结构化，方便 docker logs grep
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{ts}][{level}] {msg}")
+    print(f"[{ts}] worker   | {level:5s} | {msg}")
 
 
 # 防风控：发送间隔（秒）
@@ -77,7 +77,7 @@ def _guess_first_text_channel_id() -> str | None:
         if not resp.ok:
             _log(
                 "ERROR",
-                f"guild channels list failed. guild_id={QQ_TARGET_GUILD_ID} status={resp.status_code} body={resp.text}",
+                f"❌ 频道列表获取失败 guild_id={QQ_TARGET_GUILD_ID} status={resp.status_code} body={resp.text}",
             )
             return None
 
@@ -148,7 +148,7 @@ def _guess_first_text_channel_id() -> str | None:
 
         return None
     except Exception as e:
-        _log("ERROR", f"guild channels list exception. guild_id={QQ_TARGET_GUILD_ID} err={e}")
+        _log("ERROR", f"❌ 频道列表查询异常 guild_id={QQ_TARGET_GUILD_ID} err={e}")
         return None
 
 
@@ -159,11 +159,11 @@ DEFAULT_SEND_CHANNEL_ID = QQ_TARGET_CHANNEL_ID or _guess_first_text_channel_id()
 
 _log(
     "INFO",
-    "worker boot: "
+    "🚀 Worker 启动："
     f"api_base={BOT_API_BASE} "
-    f"has_target_channel={bool(QQ_TARGET_CHANNEL_ID)} has_target_guild={bool(QQ_TARGET_GUILD_ID)} "
-    f"default_send_channel_id={DEFAULT_SEND_CHANNEL_ID or '(empty)'} "
-    f"send_interval={SEND_INTERVAL}",
+    f"目标频道={'有' if bool(QQ_TARGET_CHANNEL_ID) else '无'} 目标服务器={'有' if bool(QQ_TARGET_GUILD_ID) else '无'} "
+    f"发送频道={DEFAULT_SEND_CHANNEL_ID or '(空)'} "
+    f"发送间隔={SEND_INTERVAL}s",
 )
 
 # ============================================================
@@ -215,14 +215,14 @@ def _load_transforms() -> list[dict]:
                     "repl": repl,
                 })
             except re.error as e:
-                _log("ERROR", f"transforms rule #{idx} regex compile failed: {e} pattern={pattern}")
+                _log("ERROR", f"❌ 清洗规则 #{idx} 正则编译失败：{e} pattern={pattern}")
         elif rtype == "append":
             text = rule.get("text", "")
             compiled.append({"type": "append", "text": text})
         else:
-            _log("WARN", f"transforms rule #{idx} unknown type: {rtype}")
+            _log("WARN", f"⚠️ 清洗规则 #{idx} 未知类型：{rtype}")
 
-    _log("INFO", f"loaded {len(compiled)} transform rules from config.yaml")
+    _log("INFO", f"📋 已加载 {len(compiled)} 条清洗规则")
     return compiled
 
 
@@ -390,7 +390,7 @@ def send_with_image(channel_id: str, text: str, image_path: str):
     if image_url:
         # 用 JSON RichText 格式，正文 + 图片
         richtext_content = _build_richtext_json(body, image_url)
-        _log("INFO", f"sending thread with image: title={title[:30]} image_url={image_url[:80]}")
+        _log("INFO", f"📤 发送图文帖子：title={title[:30]} image_url={image_url[:80]}")
         return requests.put(
             f"{BOT_API_BASE}/channels/{channel_id}/threads",
             headers={
@@ -406,7 +406,7 @@ def send_with_image(channel_id: str, text: str, image_path: str):
         )
     else:
         # 图片上传失败，降级为纯文本帖子
-        _log("WARN", f"image upload failed, fallback to text-only thread")
+        _log("WARN", f"⚠️ 图片上传失败，降级为纯文本帖子")
         return send_text(channel_id, text)
 
 
@@ -438,7 +438,7 @@ def _upload_image_to_qq(channel_id: str, image_path: str) -> str | None:
                 files=files,
                 timeout=30,
             )
-        _log("INFO", f"image upload (QQ CDN) response: status={resp.status_code} body={resp.text[:500]}")
+        _log("INFO", f"🖼️ 图片上传(QQ CDN) status={resp.status_code} body={resp.text[:500]}")
         if resp.ok:
             body = resp.json()
             attachments = body.get("attachments") or []
@@ -447,13 +447,13 @@ def _upload_image_to_qq(channel_id: str, image_path: str) -> str | None:
                 if url:
                     if not url.startswith("http"):
                         url = "https://" + url
-                    _log("INFO", f"image uploaded to QQ CDN: {url}")
+                    _log("INFO", f"🖼️ 图片已上传 QQ CDN：{url}")
                     return url
-            _log("WARN", f"image upload response has no attachment URL")
+            _log("WARN", f"⚠️ 图片上传响应无附件 URL")
         else:
-            _log("WARN", f"image upload to QQ failed: status={resp.status_code}")
+            _log("WARN", f"⚠️ 图片上传 QQ CDN 失败：status={resp.status_code}")
     except Exception as e:
-        _log("WARN", f"image upload (QQ CDN) exception: {e}")
+        _log("WARN", f"⚠️ 图片上传(QQ CDN)异常：{e}")
 
     return None
 
@@ -478,7 +478,7 @@ def _upload_image_to_imgbb(image_path: str) -> str | None:
             upload_url = "https://api.imgbb.com/1/upload"
         else:
             # 无 key 时跳过 imgbb
-            _log("INFO", "no imgbb_api_key configured, skip imgbb upload")
+            _log("INFO", "ℹ️ 未配置 imgbb_api_key，跳过 imgbb 上传")
             return None
 
         resp = requests.post(upload_url, data=payload, timeout=30)
@@ -486,11 +486,11 @@ def _upload_image_to_imgbb(image_path: str) -> str | None:
             data = resp.json().get("data", {})
             url = data.get("url") or data.get("display_url") or ""
             if url:
-                _log("INFO", f"image uploaded to imgbb: {url}")
+                _log("INFO", f"🖼️ 图片已上传 imgbb：{url}")
                 return url
-        _log("WARN", f"imgbb upload failed: status={resp.status_code} body={resp.text[:200]}")
+        _log("WARN", f"⚠️ imgbb 上传失败：status={resp.status_code} body={resp.text[:200]}")
     except Exception as e:
-        _log("WARN", f"imgbb upload exception: {e}")
+        _log("WARN", f"⚠️ imgbb 上传异常：{e}")
     return None
 
 
@@ -536,30 +536,30 @@ _keepalive = QQWsKeepAlive()
 _keepalive.start()
 
 # ── 首次启动：等待 WS 就绪（最多等 120s，避免 WS 没 ready 就开始发消息全部失败）──
-_log("INFO", "waiting for QQ WS to be ready before processing queue...")
+_log("INFO", "⏳ 等待 QQ WS 连接就绪...")
 if _keepalive.wait_until_ready(timeout=120):
-    _log("INFO", "QQ WS is ready, start processing queue")
+    _log("INFO", "✅ QQ WS 已就绪，开始处理队列")
 else:
-    _log("WARN", f"QQ WS not ready after 120s (err={_keepalive.last_error}), will process queue anyway")
+    _log("WARN", f"⚠️ QQ WS 120s 内未就绪 (err={_keepalive.last_error})，仍将处理队列")
 
 while True:
     # ── 静默时段：QQ 频道 00:00~06:00 禁止主动消息 ──
     # 消息留在 Redis 队列，时段结束后自动恢复发送
     if _in_quiet_hours():
-        _log("INFO", f"quiet hours ({QUIET_HOURS_START}:00~{QUIET_HOURS_END}:00), pausing queue consumption...")
+        _log("INFO", f"🌙 静默时段 ({QUIET_HOURS_START}:00~{QUIET_HOURS_END}:00)，暂停消费队列...")
         while _in_quiet_hours():
             time.sleep(60)  # 每分钟检查一次
-        _log("INFO", "quiet hours ended, resuming queue consumption")
+        _log("INFO", "☀️ 静默时段结束，恢复消费队列")
 
     # ── WS 不在线时，不从队列取消息，阻塞等待 ──
     # 这样消息安全留在 Redis 里，WS 恢复后按顺序发出，不会进死信
     if not _keepalive.ready:
-        _log("WARN", f"QQ WS not ready, pausing queue consumption... err={_keepalive.last_error}")
+        _log("WARN", f"⚠️ QQ WS 未就绪，暂停消费队列... err={_keepalive.last_error}")
         while not _keepalive.ready:
             _keepalive.wait_until_ready(timeout=60)
             if not _keepalive.ready:
-                _log("WARN", f"QQ WS still not ready, keep waiting... err={_keepalive.last_error}")
-        _log("INFO", "QQ WS recovered, resuming queue consumption")
+                _log("WARN", f"⚠️ QQ WS 仍未就绪，继续等待... err={_keepalive.last_error}")
+        _log("INFO", "✅ QQ WS 已恢复，继续消费队列")
 
     _, raw = r.brpop("queue")
     task = json.loads(raw)
@@ -572,7 +572,7 @@ while True:
 
     if not qq_channel_id:
         save_dead(chat_id, msg_id, "missing QQ target channel_id (QQ_TARGET_CHANNEL_ID empty)", task)
-        _log("ERROR", f"drop to dead: missing target channel_id. chat_id={chat_id} msg_id={msg_id}")
+        _log("ERROR", f"❌ 进入死信：缺少目标频道 ID chat_id={chat_id} msg_id={msg_id}")
         time.sleep(1.0)
         continue
 
@@ -597,7 +597,7 @@ while True:
                 media_path = task["media"]
                 # 图片文件不存在时（死信重发、容器重启后 /tmp 清空），降级为纯文字
                 if not os.path.exists(media_path):
-                    _log("WARN", f"media file missing, fallback to text-only: {media_path}")
+                    _log("WARN", f"⚠️ 媒体文件不存在，降级为纯文本：{media_path}")
                 else:
                     r1 = send_with_image(qq_channel_id, content, media_path)
                     if r1.ok:
@@ -621,7 +621,7 @@ while True:
 
         # ── 限流检测：QQ 频道消息发送达到上限 → 暂停等待 ──
         if not success and resp is not None and _is_rate_limited(resp):
-            _log("WARN", "QQ channel message rate limit hit! pushing back to queue, sleeping 300s...")
+            _log("WARN", "⚠️ QQ 频道消息频率限制！推回队列，休眠 300s...")
             # 把这条消息推回队列头部，不进死信
             r.rpush("queue", json.dumps(task, ensure_ascii=False))
             time.sleep(300)  # 等 5 分钟再继续
@@ -636,8 +636,8 @@ while True:
                 text_blob = None
 
             if _is_auth_error(resp, text_blob) or _is_online_required_error(resp, text_blob):
-                _log("WARN", f"send failed, will retry once after refresh/ws. status={resp.status_code} body={text_blob}")
-                _log("INFO", f"token_status(before)={get_token_status()} ws_ready={_keepalive.ready} ws_err={_keepalive.last_error}")
+                _log("WARN", f"⚠️ 发送失败，刷新鉴权后重试 status={resp.status_code} body={text_blob}")
+                _log("INFO", f"🔑 token状态={get_token_status()} ws就绪={_keepalive.ready} ws错误={_keepalive.last_error}")
 
                 # 强制刷新一次 token（如果拿不到新 token，会继续使用旧 token）
                 _ = auth_headers(force_refresh=True)
@@ -667,10 +667,10 @@ while True:
 
     if success:
         mark_processed(chat_id, msg_id)
-        _log("INFO", f"sent ok. chat_id={chat_id} msg_id={msg_id} channel_id={qq_channel_id}")
+        _log("INFO", f"✅ 发送成功 chat_id={chat_id} msg_id={msg_id} channel={qq_channel_id}")
     else:
         save_dead(chat_id, msg_id, err or "send failed", task)
-        _log("ERROR", f"sent failed -> dead. chat_id={chat_id} msg_id={msg_id} channel_id={qq_channel_id} err={err}")
+        _log("ERROR", f"❌ 发送失败→死信 chat_id={chat_id} msg_id={msg_id} channel={qq_channel_id} err={err}")
 
     # 清理临时媒体文件，避免 /tmp 积压
     if task.get("media"):

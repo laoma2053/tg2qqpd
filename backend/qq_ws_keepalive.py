@@ -37,7 +37,7 @@ def _get_gateway_url() -> tuple[str, dict]:
         raise RuntimeError(f"invalid gateway response: {data}")
     limit = data.get("session_start_limit") or {}
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{ts}][INFO] [qq-ws] gateway: url={url} shards={data.get('shards')} limit={limit}")
+    print(f"[{ts}] qq_ws    | INFO  | 🌐 Gateway: url={url} shards={data.get('shards')} limit={limit}")
     return url, limit
 
 
@@ -123,7 +123,7 @@ class QQWsKeepAlive:
     def _identify(self):
         token = get_access_token()
         ts = time.strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{ts}][INFO] [qq-ws] identify: intents={QQ_WS_INTENTS} token={token[:8]}...{token[-4:]}")
+        print(f"[{ts}] qq_ws    | INFO  | 🔑 Identify: intents={QQ_WS_INTENTS} token={token[:8]}...{token[-4:]}")
         self._send(
             {
                 "op": 2,
@@ -159,12 +159,12 @@ class QQWsKeepAlive:
                 if self.ready:
                     age = int(time.time() - (self._last_heartbeat_at or time.time()))
                     print(
-                        f"[{ts}][INFO] [qq-ws] ready url={self._connected_url} seq={self._last_seq} "
-                        f"heartbeat_interval={self._heartbeat_interval:.1f}s last_hb_age={age}s"
+                        f"[{ts}] qq_ws    | INFO  | ✅ 在线 url={self._connected_url} seq={self._last_seq} "
+                        f"心跳间隔={self._heartbeat_interval:.1f}s 上次心跳={age}s前"
                     )
                 else:
-                    err = self._last_error or "(none)"
-                    print(f"[{ts}][WARN] [qq-ws] not-ready last_error={err}")
+                    err = self._last_error or "(无)"
+                    print(f"[{ts}] qq_ws    | WARN  | ⚠️ 未就绪 last_error={err}")
             except Exception:
                 # 永不让日志线程崩
                 pass
@@ -182,9 +182,9 @@ class QQWsKeepAlive:
             if self._consecutive_failures >= self.CIRCUIT_BREAKER_THRESHOLD:
                 ts = time.strftime("%Y-%m-%d %H:%M:%S")
                 print(
-                    f"[{ts}][ERROR] [qq-ws] CIRCUIT BREAKER: "
-                    f"{self._consecutive_failures} consecutive failures, "
-                    f"sleeping {self.CIRCUIT_BREAKER_SLEEP}s ({self.CIRCUIT_BREAKER_SLEEP//60}min). "
+                    f"[{ts}] qq_ws    | ERROR | 🔴 熔断触发："
+                    f"连续失败 {self._consecutive_failures} 次，"
+                    f"休眠 {self.CIRCUIT_BREAKER_SLEEP}s ({self.CIRCUIT_BREAKER_SLEEP//60}min)。"
                     f"last_error={self._last_error}"
                 )
                 self._last_error = (
@@ -198,7 +198,7 @@ class QQWsKeepAlive:
                 self._consecutive_failures = 0
                 backoff = 5
                 ts = time.strftime("%Y-%m-%d %H:%M:%S")
-                print(f"[{ts}][INFO] [qq-ws] circuit breaker reset, retrying...")
+                print(f"[{ts}] qq_ws    | INFO  | 🔄 熔断重置，重新尝试连接...")
 
             # 通知上一轮心跳线程退出
             self._hb_stop.set()
@@ -219,8 +219,8 @@ class QQWsKeepAlive:
                     wait_sec = max(reset_after_ms / 1000.0, 60) + 5  # 多等 5 秒余量
                     ts = time.strftime("%Y-%m-%d %H:%M:%S")
                     print(
-                        f"[{ts}][WARN] [qq-ws] session_start_limit exhausted! "
-                        f"remaining=0, will wait {wait_sec:.0f}s for reset"
+                        f"[{ts}] qq_ws    | WARN  | ⚠️ 连接配额耗尽！"
+                        f"remaining=0，等待 {wait_sec:.0f}s 后重置"
                     )
                     self._last_error = f"rate limited, waiting {wait_sec:.0f}s"
                     self._stop.wait(timeout=wait_sec)
@@ -229,7 +229,7 @@ class QQWsKeepAlive:
                 # ── 配额低警告 ──
                 if remaining < 20:
                     ts = time.strftime("%Y-%m-%d %H:%M:%S")
-                    print(f"[{ts}][WARN] [qq-ws] session_start_limit low: remaining={remaining}")
+                    print(f"[{ts}] qq_ws    | WARN  | ⚠️ 连接配额偏低：remaining={remaining}")
 
                 self._ws = websocket.create_connection(url, timeout=20)
                 self._ws.settimeout(60)
@@ -267,7 +267,7 @@ class QQWsKeepAlive:
                         self._ready.set()
                         self._consecutive_failures = 0  # ★ 成功连接，重置失败计数
                         ts_now = time.strftime("%Y-%m-%d %H:%M:%S")
-                        print(f"[{ts_now}][INFO] [qq-ws] READY! session established")
+                        print(f"[{ts_now}] qq_ws    | INFO  | ✅ WS 连接就绪，会话已建立")
 
                     if op == 11:
                         pass  # Heartbeat ACK，正常
@@ -295,8 +295,8 @@ class QQWsKeepAlive:
 
                 ts = time.strftime("%Y-%m-%d %H:%M:%S")
                 print(
-                    f"[{ts}][WARN] [qq-ws] connection failed: {e}, "
-                    f"consecutive_failures={self._consecutive_failures}, retry in {backoff}s"
+                    f"[{ts}] qq_ws    | WARN  | ⚠️ 连接失败：{e}，"
+                    f"连续失败={self._consecutive_failures}，{backoff}s 后重试"
                 )
 
                 # 指数退避：5 → 10 → 20 → 40 → 60（封顶）

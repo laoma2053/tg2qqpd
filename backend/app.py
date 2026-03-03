@@ -148,7 +148,7 @@ _ENV_RESOLVED_SOURCES: set[str] = set()
 
 def _log(level: str, msg: str):
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{ts}][{level}] {msg}")
+    print(f"[{ts}] backend  | {level:5s} | {msg}")
 
 
 async def refresh_env_sources_cache() -> list[int]:
@@ -171,12 +171,12 @@ async def refresh_env_sources_cache() -> list[int]:
             resolved.add(pid)
             entity_ids.append(int(pid))
         except Exception as e:
-            _log("WARN", f"resolve tg source failed: {u} err={e}")
+            _log("WARN", f"❌ TG 源解析失败：{u} 错误={e}")
             continue
 
     global _ENV_RESOLVED_SOURCES
     _ENV_RESOLVED_SOURCES = resolved
-    _log("INFO", f"tg sources resolved: {len(_ENV_RESOLVED_SOURCES)} / {len(sources)}")
+    _log("INFO", f"✅ TG 源解析完成：{len(_ENV_RESOLVED_SOURCES)}/{len(sources)} 个频道")
     return entity_ids
 
 
@@ -199,32 +199,32 @@ async def on_new_message(event):
     if _debug_tg_events_enabled():
         _log(
             "INFO",
-            f"tg_event recv: chat_id={chat_id_str} msg_id={msg_id}",
+            f"📩 收到消息 chat_id={chat_id_str} msg_id={msg_id}",
         )
 
     # 去重
     if is_processed(event.chat_id, msg_id):
         if _debug_tg_events_enabled():
-            _log("INFO", f"tg_event drop: processed chat_id={chat_id_str} msg_id={msg_id}")
+            _log("INFO", f"⏭️ 跳过（已处理）chat_id={chat_id_str} msg_id={msg_id}")
         return
 
     conf = _build_forward_conf()
 
     if not conf.get("enabled", True):
         if _debug_tg_events_enabled():
-            _log("INFO", "tg_event drop: FORWARD_ENABLED=false")
+            _log("INFO", "⏭️ 跳过（转发已关闭）")
         return
 
     if random.random() > _normalize_gray_ratio(conf.get("gray_ratio", 1)):
         if _debug_tg_events_enabled():
-            _log("INFO", f"tg_event drop: gray_ratio gate gray_ratio={conf.get('gray_ratio')}")
+            _log("INFO", f"⏭️ 跳过（灰度过滤）gray_ratio={conf.get('gray_ratio')}")
         return
 
     text = event.message.text or ""
 
     if not pass_filter(text, conf.get("filter")):
         if _debug_tg_events_enabled():
-            _log("INFO", "tg_event drop: filter blocked")
+            _log("INFO", "⏭️ 跳过（关键词过滤）")
         return
 
     media = None
@@ -255,7 +255,7 @@ async def on_new_message(event):
     if _debug_tg_events_enabled():
         _log(
             "INFO",
-            f"tg_event enqueued ok: chat_id={chat_id_str} msg_id={msg_id} has_media={bool(media)}",
+            f"✅ 已入队 chat_id={chat_id_str} msg_id={msg_id} 有图片={bool(media)}",
         )
 
 
@@ -292,20 +292,20 @@ if __name__ == "__main__":
     fwd = CFG.get("forward") or {}
     _log(
         "INFO",
-        "backend boot: "
-        f"tg_session={SESSION} "
-        f"tg_sources={cfg_get('telegram.sources', [])} "
-        f"forward_enabled={fwd.get('enabled', True)} "
-        f"gray_ratio={fwd.get('gray_ratio', 1)} "
-        f"has_qq_target_channel={bool(str(cfg_get('qq.target_channel_id') or '').strip())}",
+        "🚀 Backend 启动："
+        f"session={SESSION} "
+        f"TG源={cfg_get('telegram.sources', [])} "
+        f"转发={'开启' if fwd.get('enabled', True) else '关闭'} "
+        f"灰度={fwd.get('gray_ratio', 1)} "
+        f"目标频道={'有' if bool(str(cfg_get('qq.target_channel_id') or '').strip()) else '无'}",
     )
 
     # 首次部署：容器后台运行无法交互输入验证码/手机号。
     # 方案：运维先用 TG_LOGIN_ONLY=1 交互式跑一次生成 session 文件，再正常启动。
     if os.getenv("TG_LOGIN_ONLY", "").strip().lower() in ("1", "true", "yes"):
-        _log("INFO", "TG_LOGIN_ONLY=1 set, will run Telethon interactive login only.")
+        _log("INFO", "🔑 TG_LOGIN_ONLY=1，进入交互式登录模式...")
         client.start()  # 这里会要求输入手机号/验证码
-        _log("INFO", "Telethon login done. Session saved. Now exit.")
+        _log("INFO", "✅ Telethon 登录完成，session 已保存，退出")
         raise SystemExit(0)
 
     # 正常启动：若 session 不存在且需要交互输入，会在容器中 EOF。
@@ -315,9 +315,9 @@ if __name__ == "__main__":
     except EOFError:
         _log(
             "ERROR",
-            "Telethon requires interactive login (phone/code), but container is non-interactive. "
-            "Please run one-time login: set TG_LOGIN_ONLY=1 and start backend in foreground with tty, "
-            "then input phone/code to generate session under TG_SESSION_DIR.",
+            "❌ Telethon 需要交互式登录（手机号/验证码），但容器无交互终端。"
+            "请设置 TG_LOGIN_ONLY=1 并以前台+tty 模式启动 backend，"
+            "输入手机号/验证码后生成 session 文件到 TG_SESSION_DIR。",
         )
         raise
 
@@ -339,7 +339,7 @@ if __name__ == "__main__":
         try:
             entity_ids = await refresh_env_sources_cache()
         except Exception as e:
-            _log("ERROR", f"refresh_env_sources_cache failed: {e}")
+            _log("ERROR", f"❌ TG 源缓存刷新失败：{e}")
 
         # 动态注册事件处理器，chats= 限定只接收白名单频道的消息
         # 这样 Telethon 底层直接过滤，其他频道的消息根本不会进入回调
@@ -348,11 +348,11 @@ if __name__ == "__main__":
                 on_new_message,
                 events.NewMessage(chats=entity_ids),
             )
-            _log("INFO", f"Telethon event handler registered: chats={entity_ids}")
+            _log("INFO", f"📡 Telethon 事件监听已注册：chats={entity_ids}")
         else:
-            _log("WARN", "No TG sources resolved, event handler NOT registered (no messages will be forwarded)")
+            _log("WARN", "⚠️ 无可用 TG 源，事件监听未注册（不会转发任何消息）")
 
-        _log("INFO", "Telethon event loop is running - TG messages will now be received.")
+        _log("INFO", "🟢 Telethon 事件循环运行中，开始接收 TG 消息")
 
         # 启动 Uvicorn（作为同一个 loop 内的 Server，不会抢占事件循环）
         config = uvicorn.Config(app, host="0.0.0.0", port=8000, loop="none")
