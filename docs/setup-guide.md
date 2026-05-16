@@ -1,6 +1,6 @@
 # TG2QQPD 配置获取与填写指南（Setup Guide）
 
-> 最后更新：2026-03-03
+> 最后更新：2026-05-16
 
 本指南帮你解决：
 
@@ -65,8 +65,7 @@
 
 | 变量 | 必填 | 默认值 | 说明 |
 |---|:---:|---|---|
-| `REDIS_HOST` | ✅ | `redis` | Docker Compose 内部服务名 |
-| `DATABASE_URL` | ✅ | `postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq` | Docker Compose 内部连接 |
+| `REDIS_HOST` | ✅ | `localhost` | 单容器内部地址 |
 
 ---
 
@@ -111,12 +110,10 @@ telegram:
 首次启动需要在终端完成交互式登录（输入验证码/二步验证密码）：
 
 ```bash
-docker compose run --rm listen python -c "
-from telethon.sync import TelegramClient
-import os
+docker compose run --rm --entrypoint "" tg2qqpd python -c "
+from telethon.sync import TelegramClient; import os
 c = TelegramClient('/app/sessions/userbot', int(os.environ['TG_API_ID']), os.environ['TG_API_HASH'])
-c.start()
-c.disconnect()
+c.start(); c.disconnect()
 "
 ```
 
@@ -234,9 +231,8 @@ IMGBB_API_KEY=your_imgbb_api_key_here
 JWT_SECRET=change_me_to_a_long_random_string
 ADMIN_PASS=change_me_to_a_strong_password
 
-# === 基础设施（Docker Compose 内部，一般不改）===
-REDIS_HOST=redis
-DATABASE_URL=postgresql://tg2qq:tg2qqpass@postgres:5432/tg2qq
+# === 基础设施（单容器内部，一般不改）===
+REDIS_HOST=localhost
 ```
 
 ---
@@ -270,7 +266,8 @@ vim .env              # 填写凭证
 vim config.yaml       # 配置 TG 源、QQ 目标、过滤规则
 
 # 2. 首次 Telegram 登录（交互式，输入验证码）
-docker compose run --rm listen python -c "
+# 注意：必须用 --entrypoint "" 绕过容器启动脚本，否则会同时启动服务进程
+docker compose run --rm --entrypoint "" tg2qqpd python -c "
 from telethon.sync import TelegramClient; import os
 c = TelegramClient('/app/sessions/userbot', int(os.environ['TG_API_ID']), os.environ['TG_API_HASH'])
 c.start(); c.disconnect()
@@ -292,7 +289,7 @@ docker compose logs -f --tail=100
 
 | # | 验证项 | 命令/方法 | 预期结果 |
 |---|---|---|---|
-| 1 | 服务全部运行 | `docker compose ps` | 4 个服务均 Up |
+| 1 | 服务全部运行 | `docker compose ps` | 1 个服务 Up |
 | 2 | 健康检查 | `curl http://localhost:8000/healthz` | `{"ok":true,...}` |
 | 3 | 管理登录 | `POST /api/login` | 返回 JWT token |
 | 4 | QQ 频道可达 | `GET /api/qq/guilds` | 返回频道列表 |

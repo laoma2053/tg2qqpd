@@ -258,11 +258,10 @@ docker compose up -d --build
 首次启动 listen 需要在终端完成 Telethon 交互式登录（验证码/二步验证）：
 
 ```bash
-docker compose run --rm listen python -c "
-from telethon.sync import TelegramClient
-c = TelegramClient('/app/sessions/userbot', API_ID, API_HASH)
-c.start()
-c.disconnect()
+docker compose run --rm --entrypoint "" tg2qqpd python -c "
+from telethon.sync import TelegramClient; import os
+c = TelegramClient('/app/sessions/userbot', int(os.environ['TG_API_ID']), os.environ['TG_API_HASH'])
+c.start(); c.disconnect()
 "
 ```
 
