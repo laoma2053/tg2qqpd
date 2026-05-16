@@ -30,6 +30,9 @@ telegram:
     - "@Q_jilupian"
     - "@Aliyun_4K_Movies"
     - "@Netdisk_Movies"
+    - "@xuexiziliaobaibaoke"
+    - "@kfcfoodcourt"
+
 
 # --------------------------------------------------
 # QQ 频道 Bot 配置
@@ -202,11 +205,10 @@ rules:
     - type: append
       text: |
         📤 资源链接：
-        加入QQ群963115963搜资源
-        夸克网盘:https://pan.quark.cn/s/31b3479e3209
-        百度网盘:https://pan.baidu.com/s/1d2kpf_PogQXfkomoqmrxeg?pwd=zhui 
-        UC网盘:https://drive.uc.cn/s/79521dbef0864?public=1
-        迅雷网盘:https://pan.xunlei.com/s/VOmmtFDZ2Dx1N67g9kI95SW3A1?pwd=sbqq
+        夸克网盘: https://pan.quark.cn/s/31b3479e3209
+        百度网盘: https://pan.baidu.com/s/1d2kpf_PogQXfkomoqmrxeg?pwd=zhui 
+        UC网盘: https://drive.uc.cn/s/79521dbef0864?public=1
+        迅雷网盘: https://pan.xunlei.com/s/VOmmtFDZ2Dx1N67g9kI95SW3A1?pwd=sbqq
 
 # --------------------------------------------------
 # 日志

@@ -10,7 +10,6 @@ python-jose
 passlib[bcrypt]
 
 # 数据存储
-psycopg2-binary
 redis
 
 # HTTP 请求（QQ API）
